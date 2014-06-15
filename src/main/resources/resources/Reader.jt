@@ -1,0 +1,160 @@
+@import com.vaiona.csvmonster.*
+@import com.vaiona.data.*
+
+@args() {
+    String BaseClassName,
+    String Where,
+    Map<AttributeInfo, String> Ordering
+    Integer skip
+    Integer take
+}
+package com.vaiona.csvmonster;
+
+import com.vaiona.csvmonster.DataReader;
+import com.vaiona.data.*;
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+public class @(BaseClassName)Reader implements DataReader<@(BaseClassName)Entity> {
+    BufferedReader reader;
+    //Map<String, FieldInfo> headers = new LinkedHashMap<>();
+
+    String  columnDelimiter     = ",";
+    String  quoteDelimiter       = "\"";
+    String  typeDelimiter       = ":";
+    String  unitDelimiter       = "::";
+    String  commentIndicator    = "#";
+    String  missingValue        = "NA";
+    String  source              = "";
+    boolean bypassFirstRow      = false;
+
+    public List<@(BaseClassName)Entity> read()  throws FileNotFoundException, IOException {
+        reader = new BufferedReader(new FileReader(source));
+
+        @if(Ordering!= null && Ordering.size() > 0) {
+        Comparator<@(BaseClassName)Entity> sorter = new Comparator<@(BaseClassName)Entity>() {
+                    @@Override
+                    public int compare(@(BaseClassName)Entity left, @(BaseClassName)Entity right){
+                    @for (Map.Entry<AttributeInfo, String> entry : Ordering.entrySet()) {
+                        @{
+                            DataTypeInfo dti = TypeSystem.getTypes().get(entry.getKey().dataTypeRef);
+                            AttributeInfo ad = entry.getKey();
+                        }
+                        @if(Ordering.size() == 1) {                            
+                            @if(entry.getValue().toUpperCase().equals("ASC")){
+                                return @(dti.getComparePattern().replace("$first$", "left." + (ad.name)).replace("$second$", "right." + (ad.name)));
+                            } else if(entry.getValue().toUpperCase().equals("DESC")) {
+                                return @(dti.getComparePattern().replace("$first$", "right." + (ad.name)).replace("$second$", "left." + (ad.name)));
+                            }
+                        } else {
+                            @if(entry_isFirst){
+                                if(@(dti.getComparePattern().replace("$first$", "left." + (ad.name)).replace("$second$", "right." + (ad.name))) != 0){
+                                    @if(entry.getValue().toUpperCase().equals("ASC")){
+                                        return @(dti.getComparePattern().replace("$first$", "left." + (ad.name)).replace("$second$", "right." + (ad.name)));
+                                    } else if(entry.getValue().toUpperCase().equals("DESC")) {
+                                        return @(dti.getComparePattern().replace("$first$", "right." + (ad.name)).replace("$second$", "left." + (ad.name)));
+                                    }
+                                }
+                            } else if (!entry_isFirst && !entry_isLast) { 
+                                else if(@(dti.getComparePattern().replace("$first$", "left." + (ad.name)).replace("$second$", "right." + (ad.name))) != 0){
+                                    @if(entry.getValue().toUpperCase().equals("ASC")){
+                                        return @(dti.getComparePattern().replace("$first$", "left." + (ad.name)).replace("$second$", "right." + (ad.name)));
+                                    } else if(entry.getValue().toUpperCase().equals("DESC")) {
+                                        return @(dti.getComparePattern().replace("$first$", "right." + (ad.name)).replace("$second$", "left." + (ad.name)));
+                                    }
+                                }
+                            } else if (entry_isLast) {
+                                else {
+                                    @if(entry.getValue().toUpperCase().equals("ASC")){
+                                        return @(dti.getComparePattern().replace("$first$", "left." + (ad.name)).replace("$second$", "right." + (ad.name)));
+                                    } else if(entry.getValue().toUpperCase().equals("DESC")) {
+                                        return @(dti.getComparePattern().replace("$first$", "right." + (ad.name)).replace("$second$", "left." + (ad.name)));
+                                    }
+                                }
+                            }
+                        }
+                    }
+               }
+              };
+        }
+
+        if(this.bypassFirstRow){
+                reader.readLine();
+        }        
+
+        List<@(BaseClassName)Entity> result = reader.lines()
+                .filter(p -> !p.trim().startsWith(commentIndicator))
+                .map(p -> p.split(columnDelimiter))
+                .map(p -> new @(BaseClassName)Entity(p))
+                @if(Where!= null && !Where.isEmpty()) {
+                    .filter(p -> (p.isValid == true) && (@Where))
+                }
+                else{
+                    .filter(p -> (p.isValid == true) )
+                }
+                @//.parallel()
+                .map(p->p.populate())
+                .filter(p->p.isValid)
+		@if(Ordering!= null && Ordering.size() > 0) {
+                   .sorted(sorter)
+                }
+                @if(skip > -1){
+                    .skip(@(skip))
+                }
+                @if(take > -1){
+                    .limit(@(take))
+                }
+                .collect(Collectors.toList())
+                ;
+        return result;
+    }
+
+    @@Override
+    public DataReader<@(BaseClassName)Entity> columnDelimiter(String value) {
+        columnDelimiter = value;
+        return this;
+    }
+
+    @@Override
+    public DataReader<@(BaseClassName)Entity> quoteDelimiter(String value) {
+        quoteDelimiter = value;
+        return this;
+    }
+
+    @@Override
+    public DataReader<@(BaseClassName)Entity> typeDelimiter(String value) {
+        typeDelimiter = value;
+        return this;
+    }
+
+    @@Override
+    public DataReader<@(BaseClassName)Entity> unitDelimiter(String value) {
+        unitDelimiter = value;
+        return this;
+    }
+
+    @@Override
+    public DataReader<@(BaseClassName)Entity> missingValue(String value) {
+        missingValue = value;
+        return this;
+    }
+    
+    @@Override
+    public DataReader<@(BaseClassName)Entity> source(String value){
+        source = value;
+        return this;
+    }
+    
+    @@Override
+    public DataReader<@(BaseClassName)Entity> bypassFirstRow(Boolean value){
+         bypassFirstRow = value;
+        return this;
+    }
+}

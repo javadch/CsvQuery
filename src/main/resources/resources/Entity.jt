@@ -1,0 +1,60 @@
+@import com.vaiona.csvmonster.*
+@import com.vaiona.data.*
+
+@args() {
+    String BaseClassName,
+    List<AttributeInfo> Attributes,
+    List<AttributeInfo> Pre,
+    List<AttributeInfo> Post
+}
+
+package com.vaiona.csvmonster;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+public class @(BaseClassName)Entity {
+
+    @for(AttributeInfo ad : Attributes) {
+        @if(ad.dataType.equals("Date")){
+            public @ad.dataType @ad.name;
+        }
+        else{
+            public @ad.dataType.toLowerCase() @ad.name;
+        }
+        
+    }
+    public boolean isValid = true; @//set it to false if the object is not valid for any reason    
+    private String[] row; @// should be a weak reference
+    
+    public @(BaseClassName)Entity (String[] row){
+        try {
+            @for(AttributeInfo ad : Pre) {
+                @ad.name = @ad.forwardMapTranslated;
+            }
+        } catch (Exception ex) {
+            @// Logger.getLogger(DataReaderBuilder.class.getName()).log(Level.SEVERE, null, ex);
+            isValid = false;
+        }
+        if(isValid){
+            this.row = row;
+        }
+       
+    }
+    
+    public @(BaseClassName)Entity populate(){
+        @// populate all other attributes and release row
+        @// make the object invalid if something went wrong
+        @// apply data conversion checks
+        try {
+            @for(AttributeInfo ad : Post) {
+                @ad.name = @ad.forwardMapTranslated;
+            }
+        } catch (Exception ex) {
+            @// Logger.getLogger(DataReaderBuilder.class.getName()).log(Level.SEVERE, null, ex);
+            isValid = false;
+        }
+        row = null;
+        return this;
+    }
+}
