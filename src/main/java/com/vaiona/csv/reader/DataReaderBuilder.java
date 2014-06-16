@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 import javax.tools.JavaFileManager;
 
 public class DataReaderBuilder {
+    public static String NAME_SPACE = "com.vaiona.csv.reader";
     // get parameters from the caller
     // create the templated classes
     // compile the class/es
@@ -157,6 +158,7 @@ public class DataReaderBuilder {
         ClassGenerator generator = new ClassGenerator();
         
         Map<String, Object> entityContext = new HashMap<>();
+        entityContext.put("namespace", NAME_SPACE);
         entityContext.put("BaseClassName", baseClassName);
         entityContext.put("Attributes", attributes.values().stream().collect(Collectors.toList()));
         entityContext.put("Pre", referencedAttributes.values().stream().collect(Collectors.toList()));
@@ -164,6 +166,7 @@ public class DataReaderBuilder {
         String entity = generator.generate("Entity", "Resource", entityContext);
         
         Map<String, Object> readerContext = new HashMap<>();
+        readerContext.put("namespace", NAME_SPACE);
         readerContext.put("BaseClassName", baseClassName);
         readerContext.put("Where", whereClauseTranslated);
         readerContext.put("Ordering", orderItems);
@@ -179,9 +182,8 @@ public class DataReaderBuilder {
         JavaFileManager fileManager = compiler.compile();
         
         // load the classes
-        Class classObject = fileManager.getClassLoader(null).loadClass("com.vaiona.csvmonster." + baseClassName + "Reader");
+        Class classObject = fileManager.getClassLoader(null).loadClass(NAME_SPACE + "." + baseClassName + "Reader");
         DataReader<Object> instance = (DataReader<Object>)ObjectCreator.load(classObject);    
-        //DataReader<Object> instance = (DataReader<Object>)ObjectCreator.load("com.vaiona.csvmonster." + baseClassName + "Reader", null);
         instance
                 .columnDelimiter(this.columnDlimiter)
                 .typeDelimiter(this.typeDlimiter)

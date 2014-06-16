@@ -1,16 +1,17 @@
-@import com.vaiona.csvmonster.*
+@import com.vaiona.csv.reader.*
 @import com.vaiona.data.*
-
 @args() {
+    String namespace,
     String BaseClassName,
     String Where,
     Map<AttributeInfo, String> Ordering
     Integer skip
     Integer take
 }
-package com.vaiona.csvmonster;
 
-import com.vaiona.csvmonster.DataReader;
+package @(namespace);
+
+import @(namespace).DataReader;
 import com.vaiona.data.*;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;

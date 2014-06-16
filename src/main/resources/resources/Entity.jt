@@ -1,14 +1,15 @@
-@import com.vaiona.csvmonster.*
+@import com.vaiona.csv.reader.*
 @import com.vaiona.data.*
 
 @args() {
+    String namespace,
     String BaseClassName,
     List<AttributeInfo> Attributes,
     List<AttributeInfo> Pre,
     List<AttributeInfo> Post
 }
 
-package com.vaiona.csvmonster;
+package @(namespace);
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
