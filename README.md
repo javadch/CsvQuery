@@ -12,6 +12,8 @@ CsvMonster
 The library uses the provided query constrcution information to create a customized data reader class and a minimalistic data object class. The reader is used to perform file operations, object materialization, filtering, ordering and limiting the result set. The data object is used as a row container so that each row of the result set is represented by one data object.
 Both the classes are created and compiled on the fly, so the client application needs the JDK in addition to the JRE. The library has been developed based on the lambda expressions introduced in Java 8 and will not work on any previous version. There is a dependency upon [Rythm Template Engine](http://rythmengine.org)
 
+An example is provided [here](https://github.com/javadch/CsvMonster/blob/master/src/main/java/com/vaiona/test/SampleUsage.java)
+
 Features I am working on:
 
 1. Adding aggregation functions to the query construction API
