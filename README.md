@@ -4,7 +4,7 @@ CsvMonster
 **CsvMonster** is a Java library to query CSV and TSV files in an easy and fast manner. Using its API, client applications can define:
 
 1. the fields as in the file. 
-2. the data attributes (projection) as needed by the client application. The attributes can map directly to the filed or be any arbitrary transformation expression ro convert one (or more of the fields) to the desired attribute
+2. the data attributes (projection) as needed by the client application. The attributes can map directly to the field or be any arbitrary transformation expression to convert one (or more of the fields).
 3. the filtering criteria to eliminate non matching records. The filtering criteria work on the attributes not on the fields
 4. the ordering of the result set by registering the attributes and the soring direction
 5. the paging of the final resultset by setting skip and take values
@@ -15,6 +15,7 @@ Both the classes are created and compiled on the fly, so the client application 
 Features I am working on:
 
 1. Adding aggregation functions to the query construction API
+2. Adding a predefined set of functions to attribute transformation expressions.
 2. Removing/ Minimizing the dependency (ies)
 3. Adding metadata to the returned result to make its usage a little bit simpler. for example column names and their data types.
 
