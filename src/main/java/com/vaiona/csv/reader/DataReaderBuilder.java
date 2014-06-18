@@ -25,7 +25,7 @@ public class DataReaderBuilder {
     // create the templated classes
     // compile the class/es
     // instantiate the reader
-    // return thr reader
+    // return the reader
 
     public DataReaderBuilder dateFormat(String format) throws ParseException{
         if(TypeSystem.getTypes().containsKey("Date"))            
