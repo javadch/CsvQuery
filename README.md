@@ -1,7 +1,7 @@
 CsvQuery
 ==========
 
-**CsvQuery** is a Java library to query CSV and TSV files in an easy and fast manner. Using its API, client applications can define:
+**CsvQuery** is a Java library to query CSV and TSV files in an easy and fast manner. CsvQuery allows reading, filtering, ordering and limiting the resulting rows of delimiter separated files such as CSV and TSV. Using its API, client applications can define:
 
 1. the fields as in the file. 
 2. the data attributes (projection) as needed by the client application. The attributes can map directly to the field or be any arbitrary transformation expression to convert one (or more of the fields).
