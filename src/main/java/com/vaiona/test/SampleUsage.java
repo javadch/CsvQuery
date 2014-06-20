@@ -47,7 +47,7 @@ public class SampleUsage {
                     .addAttribute("SN", "Real", "soilNi / 1000", Arrays.asList("soilNi"))// change the unit of the Nitrogen Body from micro to mili gram per volume unit.
                     .addAttribute("ID", "Integer", "id")
 
-                    // the row that their ATTRIBUTEs not their FILEDs match the where clause's predicate will appear in the result set
+                    // the rows that their ATTRIBUTEs (not their FILEDs) match the where clause's predicate will appear in the result set
                     .addWhere("Elevation >= 00 && Elevation <= 300 && Temperature >= 0 && Temperature <= 300")
                     // optioanl: skips the defined number of records. these are the recored that have passed the where clause.
                     .skip(2)
@@ -69,7 +69,7 @@ public class SampleUsage {
                 // but maybe different delimiter, etc.
                 List<Object> result = reader
                         .columnDelimiter(",")
-                        .quoteDelimiter("\"")
+                        .quoteMarker("\"")
                         .unitDelimiter("::")
                         .source("D:\\data\\data_10_time.csv")
                         .bypassFirstRow(true)

@@ -124,7 +124,7 @@ public class @(BaseClassName)Reader implements DataReader<@(BaseClassName)Entity
     }
 
     @@Override
-    public DataReader<@(BaseClassName)Entity> quoteDelimiter(String value) {
+    public DataReader<@(BaseClassName)Entity> quoteMarker(String value) {
         quoteDelimiter = value;
         return this;
     }

@@ -10,7 +10,7 @@ import java.util.List;
  */
 public interface DataReader<T> {
     public DataReader<T> columnDelimiter(String value);
-    public DataReader<T> quoteDelimiter(String value);
+    public DataReader<T> quoteMarker(String value);
     public DataReader<T> typeDelimiter(String value);
     public DataReader<T> unitDelimiter(String value);
     public DataReader<T> missingValue(String value);
