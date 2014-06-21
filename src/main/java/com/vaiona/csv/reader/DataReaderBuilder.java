@@ -91,7 +91,7 @@ public class DataReaderBuilder {
     String whereClauseTranslated = "";
     Map<String, AttributeInfo> referencedAttributes = new LinkedHashMap<>();
     Map<String, AttributeInfo> postAttributes = new LinkedHashMap<>();
-    public DataReaderBuilder addWhere(String whereClause){ 
+    public DataReaderBuilder where(String whereClause){ 
         this.whereClause = whereClause;
         // extract used attributes and put them in the pre population list
         extractUsedAttributes(whereClause);
@@ -136,7 +136,7 @@ public class DataReaderBuilder {
         take = value;
         return this;
     } 
-
+    
     public DataReader<Object> build() throws IOException, ClassNotFoundException, NoSuchMethodException, 
             InstantiationException, IllegalAccessException, IllegalArgumentException, 
             InvocationTargetException {

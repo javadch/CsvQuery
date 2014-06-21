@@ -28,13 +28,14 @@ public class @(BaseClassName)Reader implements DataReader<@(BaseClassName)Entity
     //Map<String, FieldInfo> headers = new LinkedHashMap<>();
 
     String  columnDelimiter     = ",";
-    String  quoteDelimiter       = "\"";
+    String  quoteMarker       = "\"";
     String  typeDelimiter       = ":";
     String  unitDelimiter       = "::";
     String  commentIndicator    = "#";
     String  missingValue        = "NA";
     String  source              = "";
     boolean bypassFirstRow      = false;
+    LineParser lineParser       = new DefaultLineParser();
 
     public List<@(BaseClassName)Entity> read()  throws FileNotFoundException, IOException {
         reader = new BufferedReader(new FileReader(source));
@@ -88,11 +89,13 @@ public class @(BaseClassName)Reader implements DataReader<@(BaseClassName)Entity
 
         if(this.bypassFirstRow){
                 reader.readLine();
-        }        
+        }           
+        lineParser.setQuoteMarker(quoteMarker);
+        lineParser.setDilimiter(columnDelimiter);
 
         List<@(BaseClassName)Entity> result = reader.lines()
                 .filter(p -> !p.trim().startsWith(commentIndicator))
-                .map(p -> p.split(columnDelimiter))
+                .map(p -> lineParser.split(p))
                 .map(p -> new @(BaseClassName)Entity(p))
                 @if(Where!= null && !Where.isEmpty()) {
                     .filter(p -> (p.isValid == true) && (@Where))
@@ -125,7 +128,7 @@ public class @(BaseClassName)Reader implements DataReader<@(BaseClassName)Entity
 
     @@Override
     public DataReader<@(BaseClassName)Entity> quoteMarker(String value) {
-        quoteDelimiter = value;
+        quoteMarker = value;
         return this;
     }
 
@@ -156,6 +159,12 @@ public class @(BaseClassName)Reader implements DataReader<@(BaseClassName)Entity
     @@Override
     public DataReader<@(BaseClassName)Entity> bypassFirstRow(Boolean value){
          bypassFirstRow = value;
+        return this;
+    }
+
+    @@Override
+    public DataReader<@(BaseClassName)Entity> lineParser(LineParser value){
+         lineParser = value;
         return this;
     }
 }

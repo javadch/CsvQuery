@@ -48,7 +48,7 @@ public class SampleUsage {
                     .addAttribute("ID", "Integer", "id")
 
                     // the rows that their ATTRIBUTEs (not their FILEDs) match the where clause's predicate will appear in the result set
-                    .addWhere("Elevation >= 00 && Elevation <= 300 && Temperature >= 0 && Temperature <= 300")
+                    .where("Elevation >= 00 && Elevation <= 300 && Temperature >= 0 && Temperature <= 300")
                     // optioanl: skips the defined number of records. these are the recored that have passed the where clause.
                     .skip(2)
                     // optional: takes the defined number of records or reaches the end of the file. when number of items are taken, the rest of the file is ignored (NOT PROCESSED)
@@ -72,6 +72,7 @@ public class SampleUsage {
                         .quoteMarker("\"")
                         .unitDelimiter("::")
                         .source("D:\\data\\data_10_time.csv")
+                        //.lineParser(null) // its possible to pass a custom line parser. 
                         .bypassFirstRow(true)
                         .read();
                 //System.out.println("The result set contains " + result.stream().count() + " records.");
