@@ -12,7 +12,8 @@ package com.vaiona.csv.reader;
  */
 public interface LineParser {
     String[] split(String line);
-    String join(String firstSegment, String... segments); //at least one degment should be provided
-    void setQuoteMarker(String quoteMarker);
-    void setDilimiter(String delimiter);
+    String join(Object... segments); //at least one segment should be provided
+    void setQuoteMarker(String value);
+    void setDilimiter(String value);
+    void setTrimTokens(boolean value);
 }

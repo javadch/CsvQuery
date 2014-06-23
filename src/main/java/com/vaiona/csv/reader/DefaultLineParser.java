@@ -16,7 +16,8 @@ import java.util.List;
 public class DefaultLineParser implements LineParser{
     private int delimiter = ',';
     private int quoteMarker = '\"';
-    
+    private boolean trimTokens = true;
+
     @Override
     public String[] split(String line) { // needs more work!
         // mostly taken from http://agiletribe.wordpress.com/2012/11/23/the-only-class-you-need-for-csv-files/
@@ -37,19 +38,22 @@ public class DefaultLineParser implements LineParser{
                 started=true;
                 if (ch == quoteMarker) {
                     inquotes = false;
-                }
-                else {
+                    curToken.append((char)quoteMarker); // put the quotes to the extracted token
+                }                
+                else { // needs more work, quotes inside quotes!
                     curToken.append((char)ch);
                 }
             }
             else {
                 if (ch == quoteMarker) {
                     inquotes = true;
-                    if (started) {
-                        // if this is the second quote in a value, add a quote
-                        // this is for the double quote in the middle of a value
-                        curToken.append(quoteMarker);
-                    }
+                    curToken.append((char)quoteMarker);
+                    // needs more work
+//                    if (started) {
+//                        // if this is the second quote in a value, add a quote
+//                        // this is for the double quote in the middle of a value
+//                        curToken.append(quoteMarker);
+//                    }
                 }
                 else if (ch == delimiter) {
                     tokens.add(curToken.toString());
@@ -70,24 +74,29 @@ public class DefaultLineParser implements LineParser{
             if(++index < line.length()) // avoid geting out of range
                 ch = line.charAt(index);
         }
-        tokens.add(curToken.toString());
+        tokens.add(this.trimTokens? curToken.toString().trim(): curToken.toString());
         String[] t = tokens.toArray(new String[tokens.size()]);
         return t;
     }
 
     @Override
-    public String join(String firstSegment, String... segments) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public String join(Object... segments) {
+        return String.join(String.valueOf((char)delimiter), (String[])segments);
     }
 
     @Override
-    public void setQuoteMarker(String quoteMarker) {
-        this.quoteMarker = quoteMarker.charAt(0);
+    public void setQuoteMarker(String value) {
+        this.quoteMarker = value.charAt(0);
     }
 
     @Override
-    public void setDilimiter(String delimiter) {
-        this.delimiter = delimiter.charAt(0);
+    public void setDilimiter(String value) {
+        this.delimiter = value.charAt(0);
+    }
+    
+    @Override
+    public void setTrimTokens(boolean value) {
+        this.trimTokens = value;
     }
     
 }
