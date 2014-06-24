@@ -15,7 +15,9 @@ public interface DataReader<T> {
     DataReader<T> unitDelimiter(String value);
     DataReader<T> missingValue(String value);
     DataReader<T> source(String value);
+    DataReader<T> target(String value);
     DataReader<T> bypassFirstRow(Boolean value);
     DataReader<T> lineParser(LineParser value);
+    DataReader<T> trimTokens(boolean value);
     List<T> read() throws FileNotFoundException, IOException;
 }

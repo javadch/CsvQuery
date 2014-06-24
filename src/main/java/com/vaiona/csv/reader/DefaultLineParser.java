@@ -80,8 +80,9 @@ public class DefaultLineParser implements LineParser{
     }
 
     @Override
-    public String join(Object... segments) {
-        return String.join(String.valueOf((char)delimiter), (String[])segments);
+    public String join(String... segments) {
+        String joined = String.join(String.valueOf((char)delimiter), segments);
+        return joined;
     }
 
     @Override

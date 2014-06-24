@@ -4,27 +4,38 @@
     String namespace,
     String BaseClassName,
     String Where,
-    Map<AttributeInfo, String> Ordering
-    Integer skip
-    Integer take
+    String rowHeader,
+    String linePattern,
+    Map<AttributeInfo, String> Ordering,
+    Integer skip,
+    Integer take,
+    boolean writeResultsToFile
 }
 
 package @(namespace);
 
-import @(namespace).DataReader;
+import @(namespace).*;
 import com.vaiona.data.*;
+import com.vaiona.data.AttributeInfo;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class @(BaseClassName)Reader implements DataReader<@(BaseClassName)Entity> {
     BufferedReader reader;
+    BufferedWriter writer;
+
     //Map<String, FieldInfo> headers = new LinkedHashMap<>();
 
     String  columnDelimiter     = ",";
@@ -34,7 +45,9 @@ public class @(BaseClassName)Reader implements DataReader<@(BaseClassName)Entity
     String  commentIndicator    = "#";
     String  missingValue        = "NA";
     String  source              = "";
+    String  target              = "";
     boolean bypassFirstRow      = false;
+    boolean trimTokens          = true;
     LineParser lineParser       = new DefaultLineParser();
 
     public List<@(BaseClassName)Entity> read()  throws FileNotFoundException, IOException {
@@ -92,8 +105,12 @@ public class @(BaseClassName)Reader implements DataReader<@(BaseClassName)Entity
         }           
         lineParser.setQuoteMarker(quoteMarker);
         lineParser.setDilimiter(columnDelimiter);
+        lineParser.setTrimTokens(trimTokens);
 
-        List<@(BaseClassName)Entity> result = reader.lines()
+        @if(!writeResultsToFile){
+            List<@(BaseClassName)Entity> result = 
+        }
+            reader.lines()
                 .filter(p -> !p.trim().startsWith(commentIndicator))
                 .map(p -> lineParser.split(p))
                 .map(p -> new @(BaseClassName)Entity(p))
@@ -115,9 +132,38 @@ public class @(BaseClassName)Reader implements DataReader<@(BaseClassName)Entity
                 @if(take > -1){
                     .limit(@(take))
                 }
-                .collect(Collectors.toList())
+                @if(writeResultsToFile){
+                    .peek(p-> writeToFile(p))
+                    .count() // it is just to make the stream to be consumed
+                } else {
+                    .collect(Collectors.toList())
+                }
                 ;
-        return result;
+        @if(writeResultsToFile){
+            if (writer != null){
+               try {
+                   writer.flush();
+                   writer.close();
+               } catch (IOException ex) {
+                   Logger.getLogger(TestReader.class.getName()).log(Level.SEVERE, null, ex);
+               }        
+            }
+            return null;
+        } else {return result;}
+        
+    }
+
+    private void writeToFile(@(BaseClassName)Entity entity){
+        try {
+            if (writer == null) {
+                writer = new BufferedWriter(new FileWriter(target));
+                writer.write("@rowHeader" + "\n");
+            }
+            String line = lineParser.join(@linePattern);
+            writer.write(line + "\n");
+        } catch (IOException ex) {
+            Logger.getLogger(TestReader.class.getName()).log(Level.SEVERE, null, ex); // change it with an AdpaterExcetion
+        } 
     }
 
     @@Override
@@ -129,6 +175,12 @@ public class @(BaseClassName)Reader implements DataReader<@(BaseClassName)Entity
     @@Override
     public DataReader<@(BaseClassName)Entity> quoteMarker(String value) {
         quoteMarker = value;
+        return this;
+    }
+
+    @@Override
+    public DataReader<@(BaseClassName)Entity> trimTokens(boolean value) {
+        trimTokens = value;
         return this;
     }
 
@@ -156,6 +208,12 @@ public class @(BaseClassName)Reader implements DataReader<@(BaseClassName)Entity
         return this;
     }
     
+    @@Override
+    public DataReader<@(BaseClassName)Entity> target(String value){
+        target = value;
+        return this;
+    }
+
     @@Override
     public DataReader<@(BaseClassName)Entity> bypassFirstRow(Boolean value){
          bypassFirstRow = value;

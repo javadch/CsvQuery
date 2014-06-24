@@ -104,10 +104,10 @@ public class DataReaderBuilder {
         return this;
     }
     
-    String columnDlimiter = ",";
-    public String getColumnDelimiter(){ return columnDlimiter;}
+    String columnDelimiter = ",";
+    public String getColumnDelimiter(){ return columnDelimiter;}
     public DataReaderBuilder columnDelimiter(String columnDelimiter){
-        this.columnDlimiter = columnDelimiter;
+        this.columnDelimiter = columnDelimiter;
         return this;
     }
     
@@ -160,18 +160,24 @@ public class DataReaderBuilder {
         Map<String, Object> entityContext = new HashMap<>();
         entityContext.put("namespace", NAME_SPACE);
         entityContext.put("BaseClassName", baseClassName);
-        entityContext.put("Attributes", attributes.values().stream().collect(Collectors.toList()));
+        entityContext.put("Attributes", attributes.values().stream().collect(Collectors.toList()));        
         entityContext.put("Pre", referencedAttributes.values().stream().collect(Collectors.toList()));
         entityContext.put("Post", postAttributes.values().stream().collect(Collectors.toList()));
         String entity = generator.generate("Entity", "Resource", entityContext);
         
         Map<String, Object> readerContext = new HashMap<>();
+        readerContext.put("Attributes", attributes.values().stream().collect(Collectors.toList()));
+        String header = String.join(columnDelimiter, attributes.values().stream().map(p-> p.name + ":" + p.dataTypeRef).collect(Collectors.toList()));
+        readerContext.put("rowHeader", header);        
+        String linePattern = String.join(columnDelimiter, attributes.values().stream().map(p-> "String.valueOf(entity." + p.name + ")").collect(Collectors.toList()));
+        readerContext.put("linePattern", linePattern);        
         readerContext.put("namespace", NAME_SPACE);
         readerContext.put("BaseClassName", baseClassName);
         readerContext.put("Where", whereClauseTranslated);
         readerContext.put("Ordering", orderItems);
         readerContext.put("skip", skip);
         readerContext.put("take", take);
+        readerContext.put("writeResultsToFile", writeResultsToFile);
         String reader = generator.generate("Reader", "Resource", readerContext);
         
         // compile source files into classes
@@ -185,7 +191,7 @@ public class DataReaderBuilder {
         Class classObject = fileManager.getClassLoader(null).loadClass(NAME_SPACE + "." + baseClassName + "Reader");
         DataReader<Object> instance = (DataReader<Object>)ObjectCreator.load(classObject);    
         instance
-                .columnDelimiter(this.columnDlimiter)
+                .columnDelimiter(this.columnDelimiter)
                 .typeDelimiter(this.typeDlimiter)
                 .unitDelimiter(this.unitDlimiter);
         return instance;
@@ -211,7 +217,7 @@ public class DataReaderBuilder {
         //translated = dataTypes.get(type).replace("$data$", translated);
         // consider Date!!!
         String innerType = TypeSystem.getTypes().get(typeRef).getName();
-        if(innerType.equals("Date")){
+        if(innerType.equals("Date") || innerType.equals("String")){
             translated = "(" + translated + ")";
         }
         else { // cast the translated expression to the attribute type
@@ -245,5 +251,10 @@ public class DataReaderBuilder {
                 .forEach((entry) -> {
                     postAttributes.put(entry.getKey(), entry.getValue());
                 });
+    }
+
+    boolean writeResultsToFile = false;
+    public void writeResultsToFile(boolean value) {
+        writeResultsToFile = value;
     }
 }

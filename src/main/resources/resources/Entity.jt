@@ -17,9 +17,9 @@ import java.util.Date;
 public class @(BaseClassName)Entity {
 
     @for(AttributeInfo ad : Attributes) {
-        @if(ad.dataType.equals("Date")){
+        @if(ad.dataType.equals("Date") || ad.dataType.equals("String")){
             public @ad.dataType @ad.name;
-        }
+        } 
         else{
             public @ad.dataType.toLowerCase() @ad.name;
         }

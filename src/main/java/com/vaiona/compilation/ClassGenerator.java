@@ -51,10 +51,11 @@ public class ClassGenerator {
             // its ia trick: The reason it works is because Scanner iterates over tokens in the stream, and in this case we separate tokens 
             // using "beginning of the input boundary" (\A) thus giving us only one token for the entire contents of the stream
             String template = s.useDelimiter("\\A").hasNext() ? s.next() : "";
+            // Set source elevel to 1.8
             return(engine.render(template, contextData));
         }
         catch (Exception ex) { 
-            return "";
+            return ex.getMessage();
         }
         finally {
             stream.close();

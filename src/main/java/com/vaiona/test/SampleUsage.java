@@ -70,9 +70,10 @@ public class SampleUsage {
                 List<Object> result = reader
                         .columnDelimiter(",")
                         .quoteMarker("\"")
-                        .unitDelimiter("::")
+                        //.unitDelimiter("::")
                         .source("D:\\data\\data_10_time.csv")
                         //.lineParser(null) // its possible to pass a custom line parser. 
+                        //.trimTokens(true)
                         .bypassFirstRow(true)
                         .read();
                 //System.out.println("The result set contains " + result.stream().count() + " records.");
