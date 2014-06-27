@@ -29,13 +29,15 @@ public class @(BaseClassName)Entity {
     private String[] row; @// should be a weak reference
     
     public @(BaseClassName)Entity (String[] row){
-        try {
-            @for(AttributeInfo ad : Pre) {
-                @ad.name = @ad.forwardMapTranslated;
+        @if(Pre.size() > 0){ // if there is no where clause, usually there is no need for a pre population, hence, the Pre is empty
+            try {
+                @for(AttributeInfo ad : Pre) {
+                    @ad.name = @ad.forwardMapTranslated;
+                }
+            } catch (Exception ex) {
+                @// Logger.getLogger(DataReaderBuilder.class.getName()).log(Level.SEVERE, null, ex);
+                isValid = false;
             }
-        } catch (Exception ex) {
-            @// Logger.getLogger(DataReaderBuilder.class.getName()).log(Level.SEVERE, null, ex);
-            isValid = false;
         }
         if(isValid){
             this.row = row;
