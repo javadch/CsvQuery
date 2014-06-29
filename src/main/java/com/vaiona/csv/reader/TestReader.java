@@ -44,43 +44,31 @@ public class TestReader implements DataReader<TestEntity> {
         lineParser.setQuoteMarker(quoteMarker);
         lineParser.setDilimiter(columnDelimiter);
         lineParser.setTrimTokens(trimTokens);
-
-        reader.lines()
+        List<TestEntity> result
+                = reader.lines()
                 .filter(p -> !p.trim().startsWith(commentIndicator))
                 .map(p -> lineParser.split(p))
                 .map(p -> new TestEntity(p))
-                .filter(p -> (p.isValid == true) && (((p.Temperature) > (0))))
+                .filter(p -> (p.isValid == true) && ((p.Description.matches("-?\\d+(\\.\\d+)?"))))
                 .map(p -> p.populate())
                 .filter(p -> p.isValid)
                 .skip(1)
                 .limit(9)
-                .peek(p -> writeToFile(p))
-                .count() // it is just to make the stream to be consumed
-                ;
-         if (writer != null){
-            try {
-                writer.flush();
-                writer.close();
-            } catch (IOException ex) {
-                Logger.getLogger(TestReader.class.getName()).log(Level.SEVERE, null, ex);
-            }        
-         }
-        return null;
+                .collect(Collectors.toList());
+        return result;
     }
 
     private void writeToFile(TestEntity entity) {
         try {
             if (writer == null) {
                 writer = new BufferedWriter(new FileWriter(target));
-                writer.write("Elevation:Real,Temperature:Real,Description:String,Latitude:Real,ID:Integer,SN:Real,Longitude:Real" + "\n");
+                writer.write("Longitude:Real,Latitude:Real,Elevation:Real,ID:Integer,Temperature:Real,SN:Real,Description:String" + "\n");
             }
-            String line = lineParser.join(String.valueOf(entity.Elevation), String.valueOf(entity.Temperature), String.valueOf(entity.Description)
-                    , String.valueOf(entity.Latitude), String.valueOf(entity.ID), String.valueOf(entity.SN), String.valueOf(entity.Longitude));
-            System.out.println(line);
+            String line = lineParser.join(String.valueOf(entity.Longitude), String.valueOf(entity.Latitude), String.valueOf(entity.Elevation), String.valueOf(entity.ID), String.valueOf(entity.Temperature), String.valueOf(entity.SN), String.valueOf(entity.Description));
             writer.write(line + "\n");
         } catch (IOException ex) {
-            Logger.getLogger(TestReader.class.getName()).log(Level.SEVERE, null, ex);
-        } 
+            Logger.getLogger(TestReader.class.getName()).log(Level.SEVERE, null, ex); // change it with an AdpaterExcetion
+        }
     }
 
     @Override
