@@ -278,11 +278,11 @@ public class DataReaderBuilder {
         InMemorySourceFile rf = new InMemorySourceFile(baseClassName + "Reader", reader);
         rf.setEntryPoint(true);
         rf.setFullName(NAME_SPACE + "." + baseClassName + "Reader");
-        sources.put(baseClassName + "Reader", rf); // the reader must be added first
+        sources.put(rf.getFullName(), rf); // the reader must be added first
         
         InMemorySourceFile ef = new InMemorySourceFile(baseClassName + "Entity", entity);
         ef.setFullName(NAME_SPACE + "." + baseClassName + "Entity");
-        sources.put(baseClassName + "Entity", ef); // the reader must be added first
+        sources.put(ef.getFullName(), ef); // the reader must be added first
         return sources;
     }
 }
