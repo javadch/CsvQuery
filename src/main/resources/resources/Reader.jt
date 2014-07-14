@@ -1,5 +1,5 @@
 @import com.vaiona.csv.reader.*
-@import com.vaiona.data.*
+@import com.vaiona.commons.data.*
 @args() {
     String namespace,
     String BaseClassName,
@@ -15,8 +15,7 @@
 package @(namespace);
 
 import @(namespace).*;
-import com.vaiona.data.*;
-import com.vaiona.data.AttributeInfo;
+import com.vaiona.commons.data.*;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileNotFoundException;

@@ -6,7 +6,7 @@
 
 package com.vaiona.csv.reader;
 
-import com.vaiona.data.FieldInfo;
+import com.vaiona.commons.data.FieldInfo;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -41,14 +41,14 @@ public class HeaderBuilder {
             if(temp.contains(typeDelimiter)){
                 if(temp.contains(unitDelimiter)){
                     field.name = temp.substring(0, temp.indexOf(typeDelimiter));
-                    field.dataTypeRef = temp.substring(
+                    field.internalDataType = temp.substring(
                             temp.indexOf(typeDelimiter)+typeDelimiter.length(), temp.indexOf(unitDelimiter));  
                     field.unit = temp.substring(
                             temp.indexOf(unitDelimiter)+unitDelimiter.length(), temp.length());
                 }
                 else{
                     field.name = temp.substring(0, temp.indexOf(typeDelimiter));
-                    field.dataTypeRef = temp.substring(
+                    field.internalDataType = temp.substring(
                             temp.indexOf(typeDelimiter)+typeDelimiter.length(), temp.length());                    
                 }
             }

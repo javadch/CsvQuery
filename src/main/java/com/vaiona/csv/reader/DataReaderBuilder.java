@@ -1,11 +1,12 @@
 package com.vaiona.csv.reader;
 
-import com.vaiona.compilation.ClassCompiler;
-import com.vaiona.compilation.ClassGenerator;
-import com.vaiona.compilation.ObjectCreator;
-import com.vaiona.data.AttributeInfo;
-import com.vaiona.data.FieldInfo;
-import com.vaiona.data.TypeSystem;
+import com.vaiona.commons.compilation.ClassCompiler;
+import com.vaiona.commons.compilation.ClassGenerator;
+import com.vaiona.commons.compilation.InMemorySourceFile;
+import com.vaiona.commons.compilation.ObjectCreator;
+import com.vaiona.commons.data.AttributeInfo;
+import com.vaiona.commons.data.FieldInfo;
+import com.vaiona.commons.data.TypeSystem;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.text.ParseException;
@@ -34,6 +35,15 @@ public class DataReaderBuilder {
     }
     
     Map<String, String> ordering = new LinkedHashMap<>();
+
+    public Map<String, String> getOrdering() {
+        return ordering;
+    }
+
+    public void setOrdering(Map<String, String> ordering) {
+        this.ordering = ordering;
+    }
+    
     public DataReaderBuilder addSort(String attributeName, String direction){
         if(!ordering.containsKey(attributeName)){
             ordering.put(attributeName, direction);                    
@@ -42,6 +52,15 @@ public class DataReaderBuilder {
     }
     
     Map<String, AttributeInfo> attributes = new LinkedHashMap<>();
+
+    public Map<String, AttributeInfo> getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(Map<String, AttributeInfo> attributes) {
+        this.attributes = attributes;
+    }
+
     public DataReaderBuilder addAttribute(String attributeName, String dataTypeRef, String forwardMap){
         List<String> referredFields = new ArrayList<>();
         referredFields.add(forwardMap);
@@ -58,8 +77,8 @@ public class DataReaderBuilder {
         if(!attributes.containsKey(attributeName)){
             AttributeInfo ad = new AttributeInfo();
             ad.name = attributeName;
-            ad.dataType = dataType;
-            ad.dataTypeRef = dataTypeRef;
+            ad.formalDataType = dataType;
+            ad.internalDataType = dataTypeRef;
             ad.forwardMap = forwardMap;
             ad.fields = referredFields;
             ad.index = attributes.size();
@@ -74,7 +93,7 @@ public class DataReaderBuilder {
         if(!fields.containsKey(fieldName)){
             FieldInfo fd = new FieldInfo();
             fd.name = fieldName;
-            fd.dataTypeRef = dataTypeRef;
+            fd.internalDataType = dataTypeRef;
             fd.index = fields.size();
             fields.put(fieldName, fd);
         }                
@@ -91,6 +110,7 @@ public class DataReaderBuilder {
     String whereClauseTranslated = "";
     Map<String, AttributeInfo> referencedAttributes = new LinkedHashMap<>();
     Map<String, AttributeInfo> postAttributes = new LinkedHashMap<>();
+    
     public DataReaderBuilder where(String whereClause){ 
         this.whereClause = whereClause;
         // extract used attributes and put them in the pre population list
@@ -137,58 +157,11 @@ public class DataReaderBuilder {
         return this;
     } 
     
-    public DataReader<Object> build() throws IOException, ClassNotFoundException, NoSuchMethodException, 
+    public DataReader<Object> build(Class classObject) throws IOException, ClassNotFoundException, NoSuchMethodException, 
             InstantiationException, IllegalAccessException, IllegalArgumentException, 
             InvocationTargetException {
-        if(baseClassName == null || baseClassName.isEmpty()){
-            baseClassName = "C" + (new Date()).getTime();
-        }
-        attributes.entrySet().stream().map((entry) -> entry.getValue()).forEach((ad) -> {
-            ad.forwardMapTranslated = translate(ad.forwardMap, ad.dataTypeRef);
-        });
+       
         
-        // transform the ordering clauses to their bound equivalent, in each attribute names are linked to the attibutes objects
-        Map<AttributeInfo, String> orderItems = new LinkedHashMap<>();        
-        for (Map.Entry<String, String> entry : ordering.entrySet()) {
-                if(attributes.containsKey(entry.getKey())){
-                    orderItems.put(attributes.get(entry.getKey()), entry.getValue());
-                }            
-        }
-        
-        ClassGenerator generator = new ClassGenerator();
-        
-        Map<String, Object> entityContext = new HashMap<>();
-        entityContext.put("namespace", NAME_SPACE);
-        entityContext.put("BaseClassName", baseClassName);
-        entityContext.put("Attributes", attributes.values().stream().collect(Collectors.toList()));        
-        entityContext.put("Pre", referencedAttributes.values().stream().collect(Collectors.toList()));
-        entityContext.put("Post", postAttributes.values().stream().collect(Collectors.toList()));
-        String entity = generator.generate("Entity", "Resource", entityContext);
-        
-        Map<String, Object> readerContext = new HashMap<>();
-        readerContext.put("Attributes", attributes.values().stream().collect(Collectors.toList()));
-        String header = String.join(columnDelimiter, attributes.values().stream().map(p-> p.name + ":" + p.dataTypeRef).collect(Collectors.toList()));
-        readerContext.put("rowHeader", header);        
-        String linePattern = String.join(columnDelimiter, attributes.values().stream().map(p-> "String.valueOf(entity." + p.name + ")").collect(Collectors.toList()));
-        readerContext.put("linePattern", linePattern);        
-        readerContext.put("namespace", NAME_SPACE);
-        readerContext.put("BaseClassName", baseClassName);
-        readerContext.put("Where", whereClauseTranslated);
-        readerContext.put("Ordering", orderItems);
-        readerContext.put("skip", skip);
-        readerContext.put("take", take);
-        readerContext.put("writeResultsToFile", writeResultsToFile);
-        String reader = generator.generate("Reader", "Resource", readerContext);
-        
-        // compile source files into classes
-        
-        ClassCompiler compiler = new ClassCompiler();
-        compiler.addSource(baseClassName + "Entity", entity);
-        compiler.addSource(baseClassName + "Reader", reader);
-        JavaFileManager fileManager = compiler.compile();
-        
-        // load the classes
-        Class classObject = fileManager.getClassLoader(null).loadClass(NAME_SPACE + "." + baseClassName + "Reader");
         DataReader<Object> instance = (DataReader<Object>)ObjectCreator.load(classObject);    
         instance
                 .columnDelimiter(this.columnDelimiter)
@@ -198,7 +171,7 @@ public class DataReaderBuilder {
 
     }
 
-    private String translate(String expression, String typeRef) {
+    private String translate(String expression, String internalType) {
         String translated = "";
         for (StringTokenizer stringTokenizer = new StringTokenizer(expression, " ");
                 stringTokenizer.hasMoreTokens();) {
@@ -206,7 +179,7 @@ public class DataReaderBuilder {
             if(fields.containsKey(token)){
                 FieldInfo fd = fields.get(token);
                 // need for a type check
-                String temp = TypeSystem.getTypes().get(fd.dataTypeRef).getCastPattern().replace("$data$", "row[" + fd.index + "]");
+                String temp = TypeSystem.getTypes().get(fd.internalDataType).getCastPattern().replace("$data$", "row[" + fd.index + "]");
                 translated = translated + " " + temp;
             }
             else {
@@ -216,7 +189,7 @@ public class DataReaderBuilder {
         // enclose the translated attribute in a data conversion based on the attributes type
         //translated = dataTypes.get(type).replace("$data$", translated);
         // consider Date!!!
-        String innerType = TypeSystem.getTypes().get(typeRef).getName();
+        String innerType = internalType; //TypeSystem.getTypes().get(typeRef).getName();
         if(innerType.equals("Date") || innerType.equals("String")){
             translated = "(" + translated + ")";
         }
@@ -256,5 +229,60 @@ public class DataReaderBuilder {
     boolean writeResultsToFile = false;
     public void writeResultsToFile(boolean value) {
         writeResultsToFile = value;
+    }
+
+    public LinkedHashMap<String, InMemorySourceFile> createSources() throws IOException {
+        // check if the statement has no adapter, throw an exception
+        
+        if(baseClassName == null || baseClassName.isEmpty()){
+            baseClassName = "C" + (new Date()).getTime();
+        }
+        attributes.entrySet().stream().map((entry) -> entry.getValue()).forEach((ad) -> {
+            ad.forwardMapTranslated = translate(ad.forwardMap, ad.internalDataType);
+        });
+        
+        // transform the ordering clauses to their bound equivalent, in each attribute names are linked to the attibutes objects
+        Map<AttributeInfo, String> orderItems = new LinkedHashMap<>();        
+        for (Map.Entry<String, String> entry : ordering.entrySet()) {
+                if(attributes.containsKey(entry.getKey())){
+                    orderItems.put(attributes.get(entry.getKey()), entry.getValue());
+                }            
+        }
+        
+        ClassGenerator generator = new ClassGenerator();
+        
+        Map<String, Object> entityContext = new HashMap<>();
+        entityContext.put("namespace", NAME_SPACE);
+        entityContext.put("BaseClassName", baseClassName);
+        entityContext.put("Attributes", attributes.values().stream().collect(Collectors.toList()));        
+        entityContext.put("Pre", referencedAttributes.values().stream().collect(Collectors.toList()));
+        entityContext.put("Post", postAttributes.values().stream().collect(Collectors.toList()));
+        String entity = generator.generate(this, "Entity", "Resource", entityContext);
+        
+        Map<String, Object> readerContext = new HashMap<>();
+        readerContext.put("Attributes", attributes.values().stream().collect(Collectors.toList()));
+        String header = String.join(columnDelimiter, attributes.values().stream().map(p-> p.name + ":" + p.internalDataType).collect(Collectors.toList()));
+        readerContext.put("rowHeader", header);        
+        String linePattern = String.join(columnDelimiter, attributes.values().stream().map(p-> "String.valueOf(entity." + p.name + ")").collect(Collectors.toList()));
+        readerContext.put("linePattern", linePattern);        
+        readerContext.put("namespace", NAME_SPACE);
+        readerContext.put("BaseClassName", baseClassName);
+        readerContext.put("Where", whereClauseTranslated);
+        readerContext.put("Ordering", orderItems);
+        readerContext.put("skip", skip);
+        readerContext.put("take", take);
+        readerContext.put("writeResultsToFile", writeResultsToFile);
+        String reader = generator.generate(this, "Reader", "Resource", readerContext);
+        
+        LinkedHashMap<String, InMemorySourceFile> sources = new LinkedHashMap<>();
+        InMemorySourceFile rf = new InMemorySourceFile(baseClassName + "Reader", reader);
+        rf.setEntryPoint(true);
+        rf.setFullName(NAME_SPACE + "." + baseClassName + "Reader");
+        sources.put(baseClassName + "Reader", rf); // the reader must be added first
+        
+        InMemorySourceFile ef = new InMemorySourceFile(baseClassName + "Entity", entity);
+        ef.setFullName(NAME_SPACE + "." + baseClassName + "Entity");
+        sources.put(baseClassName + "Entity", ef); // the reader must be added first
+        return sources;
     }
 }

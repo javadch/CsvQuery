@@ -1,8 +1,7 @@
 package com.vaiona.csv.reader;
 
 import com.vaiona.csv.reader.*;
-import com.vaiona.data.*;
-import com.vaiona.data.AttributeInfo;
+import com.vaiona.commons.data.AttributeInfo;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileNotFoundException;

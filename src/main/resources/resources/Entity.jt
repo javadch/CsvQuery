@@ -1,5 +1,5 @@
 @import com.vaiona.csv.reader.*
-@import com.vaiona.data.*
+@import com.vaiona.commons.data.*
 
 @args() {
     String namespace,
@@ -17,11 +17,11 @@ import java.util.Date;
 public class @(BaseClassName)Entity {
 
     @for(AttributeInfo ad : Attributes) {
-        @if(ad.dataType.equals("Date") || ad.dataType.equals("String")){
-            public @ad.dataType @ad.name;
+        @if(ad.internalDataType.equals("Date") || ad.internalDataType.equals("String")){
+            public @ad.internalDataType @ad.name;
         } 
         else{
-            public @ad.dataType.toLowerCase() @ad.name;
+            public @ad.internalDataType.toLowerCase() @ad.name;
         }
         
     }
@@ -35,7 +35,6 @@ public class @(BaseClassName)Entity {
                     @ad.name = @ad.forwardMapTranslated;
                 }
             } catch (Exception ex) {
-                @// Logger.getLogger(DataReaderBuilder.class.getName()).log(Level.SEVERE, null, ex);
                 isValid = false;
             }
         }
