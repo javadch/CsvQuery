@@ -58,7 +58,7 @@ public class @(BaseClassName)Reader implements DataReader<@(BaseClassName)Entity
                     public int compare(@(BaseClassName)Entity left, @(BaseClassName)Entity right){
                     @for (Map.Entry<AttributeInfo, String> entry : Ordering.entrySet()) {
                         @{
-                            DataTypeInfo dti = TypeSystem.getTypes().get(entry.getKey().dataTypeRef);
+                            DataTypeInfo dti = TypeSystem.getTypes().get(entry.getKey().formalDataType);
                             AttributeInfo ad = entry.getKey();
                         }
                         @if(Ordering.size() == 1) {                            

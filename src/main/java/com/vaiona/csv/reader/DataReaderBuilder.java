@@ -263,7 +263,7 @@ public class DataReaderBuilder {
         readerContext.put("Attributes", attributes.values().stream().collect(Collectors.toList()));
         String header = String.join(columnDelimiter, attributes.values().stream().map(p-> p.name + ":" + p.internalDataType).collect(Collectors.toList()));
         readerContext.put("rowHeader", header);        
-        String linePattern = String.join(columnDelimiter, attributes.values().stream().map(p-> "String.valueOf(entity." + p.name + ")").collect(Collectors.toList()));
+        String linePattern = String.join(",", attributes.values().stream().map(p-> "String.valueOf(entity." + p.name + ")").collect(Collectors.toList()));
         readerContext.put("linePattern", linePattern);        
         readerContext.put("namespace", NAME_SPACE);
         readerContext.put("BaseClassName", baseClassName);
