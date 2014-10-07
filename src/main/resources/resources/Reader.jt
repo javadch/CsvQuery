@@ -120,16 +120,19 @@ public class @(BaseClassName)Reader implements DataReader<@(BaseClassName)Entity
                     .filter(p -> (p.isValid == true) )
                 }
                 @//.parallel()
-                .map(p->p.populate())
-                .filter(p->p.isValid)
-		@if(Ordering!= null && Ordering.size() > 0) {
-                   .sorted(sorter)
-                }
-                @if(skip > -1){
-                    .skip(@(skip))
-                }
-                @if(take > -1){
-                    .limit(@(take))
+		@if(Ordering!= null && Ordering.size() > 0) { // if order is present, populate and then sort
+                    .map(p->p.populate())
+                    .filter(p->p.isValid)
+                    .sorted(sorter)
+                } else { // if there no ordering, there no need for early post-population, its better to skip/ take and then post-populate
+                    @if(skip > -1){
+                        .skip(@(skip))
+                    }
+                    @if(take > -1){
+                        .limit(@(take))
+                    }
+                    .map(p->p.populate())
+                    .filter(p->p.isValid)                
                 }
                 @if(writeResultsToFile){
                     .peek(p-> writeToFile(p))
