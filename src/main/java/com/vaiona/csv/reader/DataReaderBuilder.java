@@ -6,7 +6,7 @@ import com.vaiona.commons.compilation.InMemorySourceFile;
 import com.vaiona.commons.compilation.ObjectCreator;
 import com.vaiona.commons.data.AttributeInfo;
 import com.vaiona.commons.data.FieldInfo;
-import com.vaiona.commons.data.TypeSystem;
+import com.vaiona.commons.types.TypeSystem;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.text.ParseException;

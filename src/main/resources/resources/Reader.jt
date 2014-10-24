@@ -1,5 +1,7 @@
 @import com.vaiona.csv.reader.*
 @import com.vaiona.commons.data.*
+@import com.vaiona.commons.types.*;
+
 @args() {
     String namespace,
     String BaseClassName,
