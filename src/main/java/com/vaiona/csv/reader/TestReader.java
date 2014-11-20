@@ -49,10 +49,10 @@ public class TestReader implements DataReader<TestEntity> {
                 .map(p -> lineParser.split(p))
                 .map(p -> new TestEntity(p))
                 .filter(p -> (p.isValid == true) && ((p.Description.matches("-?\\d+(\\.\\d+)?"))))
-                .map(p -> p.populate())
-                .filter(p -> p.isValid)
                 .skip(1)
                 .limit(9)
+                .map(p -> p.populate())
+                .filter(p -> p.isValid)
                 .collect(Collectors.toList());
         return result;
     }

@@ -17,11 +17,11 @@ import java.util.Date;
 public class @(BaseClassName)Entity {
 
     @for(AttributeInfo ad : Attributes) {
-        @if(ad.internalDataType.equals("Date") || ad.internalDataType.equals("String")){
-            public @ad.internalDataType @ad.name;
+        @if(ad.runtimeType.equals("Date") || ad.runtimeType.equals("String")){
+            public @ad.runtimeType @ad.name;
         } 
         else{
-            public @ad.internalDataType.toLowerCase() @ad.name;
+            public @ad.runtimeType.toLowerCase() @ad.name;
         }
         
     }

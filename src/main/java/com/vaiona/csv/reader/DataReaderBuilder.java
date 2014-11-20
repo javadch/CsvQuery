@@ -61,23 +61,23 @@ public class DataReaderBuilder {
         this.attributes = attributes;
     }
 
-    public DataReaderBuilder addAttribute(String attributeName, String dataTypeRef, String forwardMap){
+    private DataReaderBuilder addAttribute(String attributeName, String dataTypeRef, String forwardMap){
         List<String> referredFields = new ArrayList<>();
         referredFields.add(forwardMap);
         String dataType = TypeSystem.getTypes().get(dataTypeRef).getName();
         return addAttribute(attributeName, dataTypeRef, dataType, forwardMap, referredFields);
     }
     
-    public DataReaderBuilder addAttribute(String attributeName, String dataTypeRef, String forwardMap, List<String> referredFields){        
+    private DataReaderBuilder addAttribute(String attributeName, String dataTypeRef, String forwardMap, List<String> referredFields){        
         String dataType = TypeSystem.getTypes().get(dataTypeRef).getName();
         return addAttribute(attributeName, dataTypeRef, dataType, forwardMap, referredFields);        
     }
     
-    public DataReaderBuilder addAttribute(String attributeName, String dataTypeRef, String dataType, String forwardMap, List<String> referredFields){        
+    private DataReaderBuilder addAttribute(String attributeName, String dataTypeRef, String dataType, String forwardMap, List<String> referredFields){        
         if(!attributes.containsKey(attributeName)){
             AttributeInfo ad = new AttributeInfo();
             ad.name = attributeName;
-            ad.formalDataType = dataType;
+            ad.conceptualDataType = dataType;
             ad.internalDataType = dataTypeRef;
             ad.forwardMap = forwardMap;
             ad.fields = referredFields;
@@ -88,6 +88,11 @@ public class DataReaderBuilder {
     }
     
     Map<String, FieldInfo> fields = new LinkedHashMap<>();
+
+    public Map<String, FieldInfo> getFields() {
+        return fields;
+    }
+    
     // it would be good to have an overload that takes the index also. it removes the need to register unused fields
     public DataReaderBuilder addField(String fieldName, String dataTypeRef){
         if(!fields.containsKey(fieldName)){
@@ -171,7 +176,7 @@ public class DataReaderBuilder {
 
     }
 
-    private String translate(String expression, String internalType) {
+    private String translate(String expression, String conceptualType) {
         String translated = "";
         for (StringTokenizer stringTokenizer = new StringTokenizer(expression, " ");
                 stringTokenizer.hasMoreTokens();) {
@@ -179,7 +184,7 @@ public class DataReaderBuilder {
             if(fields.containsKey(token)){
                 FieldInfo fd = fields.get(token);
                 // need for a type check
-                String temp = TypeSystem.getTypes().get(fd.internalDataType).getCastPattern().replace("$data$", "row[" + fd.index + "]");
+                String temp = TypeSystem.getTypes().get(fd.conceptualDataType).getCastPattern().replace("$data$", "row[" + fd.index + "]");
                 translated = translated + " " + temp;
             }
             else {
@@ -189,12 +194,11 @@ public class DataReaderBuilder {
         // enclose the translated attribute in a data conversion based on the attributes type
         //translated = dataTypes.get(type).replace("$data$", translated);
         // consider Date!!!
-        String innerType = internalType; //TypeSystem.getTypes().get(typeRef).getName();
-        if(innerType.equals("Date") || innerType.equals("String")){
+        if(conceptualType.equals("Date") || conceptualType.equals("String")){
             translated = "(" + translated + ")";
         }
         else { // cast the translated expression to the attribute type
-            translated = "(" + innerType.toLowerCase() + ")(" + translated + ")";
+            translated = "(" + TypeSystem.getTypes().get(conceptualType).getRuntimeType().toLowerCase() + ")(" + translated + ")";
         }
         
         return translated;
@@ -238,7 +242,7 @@ public class DataReaderBuilder {
             baseClassName = "C" + (new Date()).getTime();
         }
         attributes.entrySet().stream().map((entry) -> entry.getValue()).forEach((ad) -> {
-            ad.forwardMapTranslated = translate(ad.forwardMap, ad.internalDataType);
+            ad.forwardMapTranslated = translate(ad.forwardMap, ad.conceptualDataType);
         });
         
         // transform the ordering clauses to their bound equivalent, in each attribute names are linked to the attibutes objects
