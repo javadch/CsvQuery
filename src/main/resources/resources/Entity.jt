@@ -17,13 +17,15 @@ import java.util.Date;
 public class @(BaseClassName)Entity {
 
     @for(AttributeInfo ad : Attributes) {
+        public @ad.runtimeType @ad.name;
+        /*
         @if(ad.runtimeType.equals("Date") || ad.runtimeType.equals("String")){
             public @ad.runtimeType @ad.name;
         } 
         else{
             public @ad.runtimeType.toLowerCase() @ad.name;
         }
-        
+        */
     }
     public boolean isValid = true; @//set it to false if the object is not valid for any reason    
     private String[] row; @// should be a weak reference
