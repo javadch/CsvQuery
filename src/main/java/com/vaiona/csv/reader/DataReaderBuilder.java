@@ -61,36 +61,44 @@ public class DataReaderBuilder {
         this.attributes = attributes;
     }
 
-    private DataReaderBuilder addAttribute(String attributeName, String dataTypeRef, String forwardMap){
-        List<String> referredFields = new ArrayList<>();
-        referredFields.add(forwardMap);
-        String dataType = TypeSystem.getTypes().get(dataTypeRef).getName();
-        return addAttribute(attributeName, dataTypeRef, dataType, forwardMap, referredFields);
-    }
+//    private DataReaderBuilder addAttribute(String attributeName, String dataTypeRef, String forwardMap){
+//        List<String> referredFields = new ArrayList<>();
+//        referredFields.add(forwardMap);
+//        String dataType = TypeSystem.getTypes().get(dataTypeRef).getName();
+//        return addAttribute(attributeName, dataTypeRef, dataType, forwardMap, referredFields);
+//    }
     
-    private DataReaderBuilder addAttribute(String attributeName, String dataTypeRef, String forwardMap, List<String> referredFields){        
-        String dataType = TypeSystem.getTypes().get(dataTypeRef).getName();
-        return addAttribute(attributeName, dataTypeRef, dataType, forwardMap, referredFields);        
-    }
+//    private DataReaderBuilder addAttribute(String attributeName, String dataTypeRef, String forwardMap, List<String> referredFields){        
+//        String dataType = TypeSystem.getTypes().get(dataTypeRef).getName();
+//        return addAttribute(attributeName, dataTypeRef, dataType, forwardMap, referredFields);        
+//    }
     
-    private DataReaderBuilder addAttribute(String attributeName, String dataTypeRef, String dataType, String forwardMap, List<String> referredFields){        
-        if(!attributes.containsKey(attributeName)){
-            AttributeInfo ad = new AttributeInfo();
-            ad.name = attributeName;
-            ad.conceptualDataType = dataType;
-            ad.internalDataType = dataTypeRef;
-            ad.forwardMap = forwardMap;
-            ad.fields = referredFields;
-            ad.index = attributes.size();
-            attributes.put(attributeName, ad);
-        }            
-        return this;
-    }
+//    private DataReaderBuilder addAttribute(String attributeName, String dataTypeRef, String dataType, String forwardMap, List<String> referredFields){        
+//        if(!attributes.containsKey(attributeName)){
+//            AttributeInfo ad = new AttributeInfo();
+//            ad.name = attributeName;
+//            ad.conceptualDataType = dataType;
+//            ad.internalDataType = dataTypeRef;
+//            ad.forwardMap = forwardMap;
+//            ad.fields = referredFields;
+//            ad.index = attributes.size();
+//            attributes.put(attributeName, ad);
+//        }            
+//        return this;
+//    }
     
     Map<String, FieldInfo> fields = new LinkedHashMap<>();
+    Map<String, FieldInfo> rightFields = new LinkedHashMap<>();
 
     public Map<String, FieldInfo> getFields() {
         return fields;
+    }
+    public Map<String, FieldInfo> getLeftFields() {
+        return fields;
+    }
+
+    public Map<String, FieldInfo> getRightFields() {
+        return rightFields;
     }
     
     // it would be good to have an overload that takes the index also. it removes the need to register unused fields
@@ -108,6 +116,15 @@ public class DataReaderBuilder {
     public DataReaderBuilder addFields(Map<String, FieldInfo> fields){
         this.fields.clear();
         this.fields.putAll(fields);
+        return this;
+    }
+    public DataReaderBuilder addLeftFields(Map<String, FieldInfo> fields){
+        return addFields(fields);
+    }
+    
+    public DataReaderBuilder addRightFields(Map<String, FieldInfo> fields){
+        this.rightFields.clear();
+        this.rightFields.putAll(fields);
         return this;
     }
 
@@ -136,6 +153,19 @@ public class DataReaderBuilder {
         return this;
     }
     
+    public String getLeftColumnDelimiter(){ return columnDelimiter;}
+    public DataReaderBuilder leftColumnDelimiter(String columnDelimiter) {
+        this.columnDelimiter = columnDelimiter;
+        return this;
+    }
+
+    String rightColumnDelimiter = ",";
+    public String getRightColumnDelimiter(){ return rightColumnDelimiter;}
+    public DataReaderBuilder rightColumnDelimiter(String columnDelimiter) {
+        this.rightColumnDelimiter = columnDelimiter;
+        return this;
+    }
+
     String typeDlimiter = ":";
     public String getTypeDelimiter(){ return typeDlimiter;}
     public DataReaderBuilder typeDlimiter(String typeDlimiter){
@@ -176,18 +206,30 @@ public class DataReaderBuilder {
 
     }
 
-    private String translate(String expression, String conceptualType) {
+    private String translate(String expression, String conceptualType, boolean rightSide) {
         String translated = "";
         for (StringTokenizer stringTokenizer = new StringTokenizer(expression, " ");
                 stringTokenizer.hasMoreTokens();) {
             String token = stringTokenizer.nextToken();
-            if(fields.containsKey(token)){
+            boolean found = false;
+            if(!rightSide && fields.containsKey(token)){
                 FieldInfo fd = fields.get(token);
                 // need for a type check
                 String temp = TypeSystem.getTypes().get(fd.conceptualDataType).getCastPattern().replace("$data$", "row[" + fd.index + "]");
                 translated = translated + " " + temp;
+                found = true;
             }
-            else {
+            if(rightSide && rightFields.containsKey(token)){
+                FieldInfo fd = rightFields.get(token);
+                // need for a type check
+                // the righside attributes reffer to the right side fields.Tthe Entity is a product of a line of the left and the right container
+                // The generated code, creates the product by concatenating the left and right string arrays and passes them as the cotr argument 
+                // to the Entity. This is why the fied indexes for the right side attributes are shifted by the size of the left hand side field array.
+                String temp = TypeSystem.getTypes().get(fd.conceptualDataType).getCastPattern().replace("$data$", "row[" + (fields.size() + fd.index) + "]");
+                translated = translated + " " + temp;
+                found = true;
+            }
+            if(!found) {
                 translated = translated + " " + token;
             }            
         }
@@ -242,7 +284,10 @@ public class DataReaderBuilder {
             baseClassName = "C" + (new Date()).getTime();
         }
         attributes.entrySet().stream().map((entry) -> entry.getValue()).forEach((ad) -> {
-            ad.forwardMapTranslated = translate(ad.forwardMap, ad.conceptualDataType);
+            if(ad.joinSide.equalsIgnoreCase("R"))
+                ad.forwardMapTranslated = translate(ad.forwardMap, ad.conceptualDataType, true);
+            else
+                ad.forwardMapTranslated = translate(ad.forwardMap, ad.conceptualDataType, false);
         });
         
         // transform the ordering clauses to their bound equivalent, in each attribute names are linked to the attibutes objects
@@ -289,4 +334,5 @@ public class DataReaderBuilder {
         sources.put(ef.getFullName(), ef); // the reader must be added first
         return sources;
     }
+
 }
