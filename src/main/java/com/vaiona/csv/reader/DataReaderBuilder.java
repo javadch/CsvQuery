@@ -22,6 +22,15 @@ import javax.tools.JavaFileManager;
 
 public class DataReaderBuilder {
     public static String NAME_SPACE = "com.vaiona.csv.reader";
+    private String joinType = ""; // must remain empty for non join statements
+    private String joinOperator;
+    private String leftJoinKey;    
+    private String rightJoinKey;
+    Map<String, FieldInfo> fields = new LinkedHashMap<>();
+    Map<String, FieldInfo> rightFields = new LinkedHashMap<>();
+
+
+    
     // get parameters from the caller
     // create the templated classes
     // compile the class/es
@@ -87,9 +96,6 @@ public class DataReaderBuilder {
 //        return this;
 //    }
     
-    Map<String, FieldInfo> fields = new LinkedHashMap<>();
-    Map<String, FieldInfo> rightFields = new LinkedHashMap<>();
-
     public Map<String, FieldInfo> getFields() {
         return fields;
     }
@@ -132,11 +138,12 @@ public class DataReaderBuilder {
     String whereClauseTranslated = "";
     Map<String, AttributeInfo> referencedAttributes = new LinkedHashMap<>();
     Map<String, AttributeInfo> postAttributes = new LinkedHashMap<>();
+    Map<String, AttributeInfo> joinKeyAttributes = new LinkedHashMap<>();
     
-    public DataReaderBuilder where(String whereClause){ 
+    public DataReaderBuilder where(String whereClause, boolean isJoinMode){ 
         this.whereClause = whereClause;
         // extract used attributes and put them in the pre population list
-        extractUsedAttributes(whereClause);
+        extractUsedAttributes(whereClause, isJoinMode);
         return this;
     }
     
@@ -200,6 +207,7 @@ public class DataReaderBuilder {
         DataReader<Object> instance = (DataReader<Object>)ObjectCreator.load(classObject);    
         instance
                 .columnDelimiter(this.columnDelimiter)
+                .columnDelimiterRight(this.rightColumnDelimiter)
                 .typeDelimiter(this.typeDlimiter)
                 .unitDelimiter(this.unitDlimiter);
         return instance;
@@ -246,7 +254,7 @@ public class DataReaderBuilder {
         return translated;
     }
     
-    private void extractUsedAttributes(String expression) {
+    private void extractUsedAttributes(String expression, boolean isJoinMode) {
         referencedAttributes.clear();
         for (StringTokenizer stringTokenizer = new StringTokenizer(expression, " ");
                 stringTokenizer.hasMoreTokens();) {
@@ -258,18 +266,15 @@ public class DataReaderBuilder {
             }  
             // translate the wehre clause
             if(attributes.containsKey(token)){
-                whereClauseTranslated = whereClauseTranslated + " " + "p." + token;
+                if(!isJoinMode)
+                    whereClauseTranslated = whereClauseTranslated + " " + "p." + token;
+                else
+                    whereClauseTranslated = whereClauseTranslated + " " + "rowEntity." + token;
             }
             else {
                 whereClauseTranslated = whereClauseTranslated + " " + token;
             }                      
         }
-        postAttributes.clear();
-        attributes.entrySet().stream()
-                .filter((entry) -> (!referencedAttributes.containsKey(entry.getKey())))
-                .forEach((entry) -> {
-                    postAttributes.put(entry.getKey(), entry.getValue());
-                });
     }
 
     boolean writeResultsToFile = false;
@@ -304,12 +309,10 @@ public class DataReaderBuilder {
         entityContext.put("namespace", NAME_SPACE);
         entityContext.put("BaseClassName", baseClassName);
         entityContext.put("Attributes", attributes.values().stream().collect(Collectors.toList()));        
-        entityContext.put("Pre", referencedAttributes.values().stream().collect(Collectors.toList()));
-        entityContext.put("Post", postAttributes.values().stream().collect(Collectors.toList()));
-        String entity = generator.generate(this, "Entity", "Resource", entityContext);
         
         Map<String, Object> readerContext = new HashMap<>();
         readerContext.put("Attributes", attributes.values().stream().collect(Collectors.toList()));
+        // the output row header, when the reader, pushes the resultset to another file
         String header = String.join(columnDelimiter, attributes.values().stream().map(p-> p.name + ":" + p.internalDataType).collect(Collectors.toList()));
         readerContext.put("rowHeader", header);        
         String linePattern = String.join(",", attributes.values().stream().map(p-> "String.valueOf(entity." + p.name + ")").collect(Collectors.toList()));
@@ -321,8 +324,46 @@ public class DataReaderBuilder {
         readerContext.put("skip", skip);
         readerContext.put("take", take);
         readerContext.put("writeResultsToFile", writeResultsToFile);
-        String reader = generator.generate(this, "Reader", "Resource", readerContext);
+        String entity = "";
+        String reader = "";
         
+        if(this.joinType.equalsIgnoreCase("")){ // Single Source
+            // Pre list contains the attributes referenced from the where clause
+            entityContext.put("Pre", referencedAttributes.values().stream().collect(Collectors.toList()));
+            postAttributes = attributes.entrySet().stream()
+                .filter((entry) -> (!referencedAttributes.containsKey(entry.getKey())))
+                .collect(Collectors.toMap(p->p.getKey(), p->p.getValue()));
+            // Single container does not the Mid attributes
+            // Post list contains all the other attributes except those in the Pre
+            entityContext.put("Post", postAttributes.values().stream().collect(Collectors.toList()));
+            
+            entity = generator.generate(this, "Entity", "Resource", entityContext);
+            reader = generator.generate(this, "Reader", "Resource", readerContext);
+        } else {
+            // set pre to join keys, mid: where clause keys
+            joinKeyAttributes.put(leftJoinKey, attributes.get(leftJoinKey));
+            joinKeyAttributes.put(rightJoinKey, attributes.get(rightJoinKey));
+            // Pre list contains the attribtes used as join keys
+            entityContext.put("Pre", joinKeyAttributes.values().stream().collect(Collectors.toList()));
+            // Mid contains the attrbutes referenced from the where clause
+            entityContext.put("Mid", referencedAttributes.values().stream().collect(Collectors.toList()));
+            postAttributes = attributes.entrySet().stream()
+                .filter((entry) -> (!referencedAttributes.containsKey(entry.getKey())))
+                .filter((entry) -> (!joinKeyAttributes.containsKey(entry.getKey())))
+                .collect(Collectors.toMap(p->p.getKey(), p->p.getValue()));
+            // Post list contains all the attributes except those used as join key or in the where clause
+            entityContext.put("Post", postAttributes.values().stream().collect(Collectors.toList()));
+
+            readerContext.put("joinType", this.joinType);
+            readerContext.put("joinOperator", this.joinOperator);            
+            readerContext.put("leftJoinKey", this.leftJoinKey);
+            readerContext.put("rightJoinKey", this.rightJoinKey);
+            // Mid is passed to the reader in order to prevent calling midPopulate when not neccessary; the case when there is no WHERE clause.
+            readerContext.put("Mid", referencedAttributes.values().stream().collect(Collectors.toList()));
+            
+            entity = generator.generate(this, "Entity", "Resource", entityContext);
+            reader = generator.generate(this, "JoinReader", "Resource", readerContext);
+        }
         LinkedHashMap<String, InMemorySourceFile> sources = new LinkedHashMap<>();
         InMemorySourceFile rf = new InMemorySourceFile(baseClassName + "Reader", reader);
         rf.setEntryPoint(true);
@@ -333,6 +374,38 @@ public class DataReaderBuilder {
         ef.setFullName(NAME_SPACE + "." + baseClassName + "Entity");
         sources.put(ef.getFullName(), ef); // the reader must be added first
         return sources;
+    }
+
+    public String getJoinType() {
+        return joinType;
+    }
+
+    public void setJoinType(String joinType) {
+        this.joinType = joinType;
+    }
+
+    public String getJoinOperation() {
+        return joinOperator;
+    }
+
+    public void setJoinOperator(String joinOperator) {
+        this.joinOperator = joinOperator;
+    }
+
+    public String getLeftJoinKey() {
+        return leftJoinKey;
+    }
+
+    public void setLeftJoinKey(String leftJoinKey) {
+        this.leftJoinKey = leftJoinKey;
+    }
+
+    public String getRightJoinKey() {
+        return rightJoinKey;
+    }
+
+    public void setRightJoinKey(String rightJoinKey) {
+        this.rightJoinKey = rightJoinKey;
     }
 
 }

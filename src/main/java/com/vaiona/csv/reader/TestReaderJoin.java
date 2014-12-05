@@ -1,7 +1,5 @@
 package com.vaiona.csv.reader;
 
-import com.vaiona.csv.reader.*;
-import com.vaiona.commons.data.AttributeInfo;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileInputStream;
@@ -10,41 +8,40 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.IntStream;
 
 public class TestReaderJoin implements DataReader<TestEntityJoin> {
 
-    BufferedReader leftContainer, rightContainer;
+    BufferedReader leftReader, rightReader;
     BufferedWriter writer;
 //Map<String, FieldInfo> headers = new LinkedHashMap<>();
     String columnDelimiter = ",";
+    String columnDelimiterRight = ",";
     String quoteMarker = "\"";
     String typeDelimiter = ":";
     String unitDelimiter = "::";
     String commentIndicator = "#";
     String missingValue = "NA";
     String leftSource = "";
-    String rightSource = "";
+    private String sourceRight;
     String target = "";
     boolean bypassFirstRow = false;
+    private boolean bypassFirstRowRight;
     boolean trimTokens = true;
     LineParser lineParser = new DefaultLineParser();
+    LineParser lineParserRight = new DefaultLineParser();
 
     public List<TestEntityJoin> read() throws FileNotFoundException, IOException {
         leftSource = "D:\\Projects\\PhD\\Data\\leftJoin1.csv";
-        rightSource = "D:\\Projects\\PhD\\Data\\rightJoin1.csv";
+        sourceRight = "D:\\Projects\\PhD\\Data\\rightJoin1.csv";
         List<TestEntityJoin> resultset = new ArrayList<>();
         if (this.bypassFirstRow) {
-            leftContainer.readLine();
+            leftReader.readLine();
         }
         lineParser.setQuoteMarker(quoteMarker);
         lineParser.setDilimiter(columnDelimiter);
@@ -52,37 +49,41 @@ public class TestReaderJoin implements DataReader<TestEntityJoin> {
 
         long skipped =0, taken =0;
         long skip =1, take = 2;
-        leftContainer = new BufferedReader(new FileReader(leftSource));
-        FileInputStream rightInputStream = new FileInputStream(rightSource);
-        for(String[] left: leftContainer.lines()
+        leftReader = new BufferedReader(new FileReader(leftSource));
+        FileInputStream rightInputStream = new FileInputStream(sourceRight);
+        for(String[] left: leftReader.lines()
                 .filter(p -> !p.trim().startsWith(commentIndicator))
                 .map(p -> lineParser.split(p)).collect(Collectors.toList())                 
             ){
             if(taken >= take) break;
             try{
                 rightInputStream.getChannel().position(0);
-                rightContainer = new BufferedReader(new InputStreamReader(rightInputStream));
-                for(String[] right: rightContainer.lines()
+                rightReader = new BufferedReader(new InputStreamReader(rightInputStream));
+                if (this.bypassFirstRowRight) {
+                    rightReader.readLine();
+                }
+                for(String[] right: rightReader.lines()
                         .filter(p -> !p.trim().startsWith(commentIndicator))
-                        .map(p -> lineParser.split(p)).collect(Collectors.toList()) 
+                        .map(p -> lineParserRight.split(p)).collect(Collectors.toList()) 
                     ){
-                    TestEntityJoin row = new TestEntityJoin(left, right);
-                    if(!row.isValid) continue; // filter rows with wrong keys
-                    if(row.LeftKey != row.RightKey) continue; // INNER JOIN key match
-                    row.populateForWhere(); // populate attributes required by the where clause.
-                    if(!row.isValid || row.Longitude < 10) continue; // check population validity and appy the Where clause.
+                    String[] joinedRow = Arrays.copyOf(left, left.length + right.length);
+                    System.arraycopy(right, 0, joinedRow, left.length, right.length);
+                    TestEntityJoin rowEntity = new TestEntityJoin(joinedRow); // PRE: populate the keys
+                    if(!rowEntity.isValid) continue; // filter rows with wrong keys
+                    if(rowEntity.LeftKey != rowEntity.RightKey) continue; // INNER JOIN key match
+                    rowEntity.midPopulate(); // populate attributes required by the where clause.
+                    if(!rowEntity.isValid || !(rowEntity.Longitude < 10)) continue; // check population validity and appy the Where clause.
                     // if no sorting is requested, try applying limits here, otherwise do it when the join is finished
                     if(skipped++ < skip) continue;
-                    row.populateLeft(); // populate the ramining attributes.
-                    row.populateRight();
-                    resultset.add(row);
+                    rowEntity.populate(); // populate the ramining attributes.
+                    resultset.add(rowEntity);
                     if(taken++ >= take) break;
                 }
             } catch (IOException ex){
                 // throw proper exception
             }
         }
-
+        
         List<TestEntityJoin> result
             = resultset.stream()
                 .skip(1)
@@ -158,9 +159,27 @@ public class TestReaderJoin implements DataReader<TestEntityJoin> {
         return this;
     }
 
+//    @Override
+//    public DataReader<TestEntityJoin> lineParser(LineParser value) {
+//        lineParser = value;
+//        return this;
+//    }
+
     @Override
-    public DataReader<TestEntityJoin> lineParser(LineParser value) {
-        lineParser = value;
+    public DataReader<TestEntityJoin> sourceRight(String value) {
+        this.sourceRight = value;
+        return this;
+    }
+
+    @Override
+    public DataReader<TestEntityJoin> bypassFirstRowRight(Boolean value) {
+        this.bypassFirstRowRight = value;
+        return this;
+    }
+
+    @Override
+    public DataReader<TestEntityJoin> columnDelimiterRight(String value) {
+        this.columnDelimiterRight = value;
         return this;
     }
 

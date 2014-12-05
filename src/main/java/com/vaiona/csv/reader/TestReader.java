@@ -125,8 +125,18 @@ public class TestReader implements DataReader<TestEntity> {
     }
 
     @Override
-    public DataReader<TestEntity> lineParser(LineParser value) {
-        lineParser = value;
+    public DataReader<TestEntity> bypassFirstRowRight(Boolean value) {
         return this;
     }
+
+    @Override
+    public DataReader<TestEntity> sourceRight(String value) {
+        return this;
+    }
+
+    @Override
+    public DataReader<TestEntity> columnDelimiterRight(String value) {
+        return this;
+    }
+    
 }

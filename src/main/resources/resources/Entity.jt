@@ -6,6 +6,7 @@
     String BaseClassName,
     List<AttributeInfo> Attributes,
     List<AttributeInfo> Pre,
+    List<AttributeInfo> Mid,
     List<AttributeInfo> Post
 }
 
@@ -31,7 +32,9 @@ public class @(BaseClassName)Entity {
     private String[] row; @// should be a weak reference
     
     public @(BaseClassName)Entity (String[] row){
-        @if(Pre.size() > 0){ // if there is no where clause, usually there is no need for a pre population, hence, the Pre is empty
+        // if there is no where clause, usually there is no need for a pre population, hence, the Pre is empty
+        // in case of JOIN, the ctor initializes the join keys
+        @if(Pre != null && Pre.size() > 0){ 
             try {
                 @for(AttributeInfo ad : Pre) {
                     @ad.name = @ad.forwardMapTranslated;
@@ -42,10 +45,22 @@ public class @(BaseClassName)Entity {
         }
         if(isValid){
             this.row = row;
-        }
-       
+        }       
     }
-    
+
+    @if(Mid != null && Mid.size() > 0){ 
+        public @(BaseClassName)Entity midPopulate() {
+            try {
+                @for(AttributeInfo ad : Mid) {
+                    @ad.name = @ad.forwardMapTranslated;
+                }
+            } catch (Exception ex) {
+                isValid = false;
+            }
+            isValid = true;
+            return this;
+        }    
+    }
     public @(BaseClassName)Entity populate(){
         @// populate all other attributes and release row
         @// make the object invalid if something went wrong
@@ -55,7 +70,6 @@ public class @(BaseClassName)Entity {
                 @ad.name = @ad.forwardMapTranslated;
             }
         } catch (Exception ex) {
-            @// Logger.getLogger(DataReaderBuilder.class.getName()).log(Level.SEVERE, null, ex);
             isValid = false;
         }
         row = null;

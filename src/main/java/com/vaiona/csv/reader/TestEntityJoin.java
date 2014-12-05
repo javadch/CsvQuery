@@ -18,38 +18,42 @@ public class TestEntityJoin {
     public double Temperature;
     public double SN;
     public boolean isValid = true;
-    private String[] leftRow;
-    private String[] rightRow;
+    private String[] row;
     
-    public TestEntityJoin(String[] leftRow, String[] rightRow){
+    // pre populate
+    public TestEntityJoin(String[] row){
         try {
-            LeftKey = (int) (Integer.parseInt(leftRow[0]));
-            RightKey = (int) (Integer.parseInt(rightRow[0]));
+            LeftKey = (int) (Integer.parseInt(row[0]));
+            RightKey = (int) (Integer.parseInt(row[9]));
         } catch (Exception ex) {
             isValid = false;
         }
         if (isValid) {
-            this.leftRow = leftRow;
-            this.rightRow = rightRow;
+            this.row = row;
         }        
     }
 
     // right anf left population methods are used in outer joins
-    public TestEntityJoin populateLeft() {
-        Elevation = (double) (Double.parseDouble(leftRow[3]));
+    // populate 1
+    public TestEntityJoin populate() {
+        Elevation = (double) (Double.parseDouble(row[3]));
         isValid = true;
         return this;
     }
 
+    // populate 2
     public TestEntityJoin populateRight() {
-        Latitude = (double) (Double.parseDouble(rightRow[2]));
+        Latitude = (double) (Double.parseDouble(row[2]));
         isValid = true;
         return this;
     }
 
-    public TestEntityJoin populateForWhere() {
-        Longitude = (double) (Double.parseDouble(leftRow[1]));
+    // populate 3
+    public TestEntityJoin midPopulate() {
+        Longitude = (double) (Double.parseDouble(row[1]));
         isValid = true;
         return this;
     }
+    
+    // post populate
 }

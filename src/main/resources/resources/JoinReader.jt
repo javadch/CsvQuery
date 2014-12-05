@@ -11,7 +11,12 @@
     Map<AttributeInfo, String> Ordering,
     Integer skip,
     Integer take,
-    boolean writeResultsToFile
+    boolean writeResultsToFile,
+    String joinType,
+    String joinOperator,
+    String leftJoinKey,
+    String rightJoinKey,
+    List<AttributeInfo> Mid
 }
 
 package @(namespace);
@@ -21,6 +26,8 @@ import com.vaiona.commons.data.*;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -32,27 +39,31 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.Arrays;
 
 public class @(BaseClassName)Reader implements DataReader<@(BaseClassName)Entity> {
-    BufferedReader reader;
+    BufferedReader leftReader, rightReader;
     BufferedWriter writer;
 
     //Map<String, FieldInfo> headers = new LinkedHashMap<>();
 
     String  columnDelimiter     = ",";
+    String  columnDelimiterRight= ",";
     String  quoteMarker       = "\"";
     String  typeDelimiter       = ":";
     String  unitDelimiter       = "::";
     String  commentIndicator    = "#";
     String  missingValue        = "NA";
     String  source              = "";
+    String  sourceRight         = "";
     String  target              = "";
     boolean bypassFirstRow      = false;
+    boolean bypassFirstRowRight = false;
     boolean trimTokens          = true;
     LineParser lineParser       = new DefaultLineParser();
+    LineParser lineParserRight  = new DefaultLineParser();
 
     public List<@(BaseClassName)Entity> read()  throws FileNotFoundException, IOException {
-        reader = new BufferedReader(new FileReader(source));
 
         @if(Ordering!= null && Ordering.size() > 0) {
         Comparator<@(BaseClassName)Entity> sorter = new Comparator<@(BaseClassName)Entity>() {
@@ -101,66 +112,98 @@ public class @(BaseClassName)Reader implements DataReader<@(BaseClassName)Entity
               };
         }
 
-        if(this.bypassFirstRow){
-                reader.readLine();
-        }           
+        lineParserRight.setQuoteMarker(quoteMarker);
+        lineParserRight.setDilimiter(columnDelimiterRight);
+        lineParserRight.setTrimTokens(trimTokens);
+
         lineParser.setQuoteMarker(quoteMarker);
         lineParser.setDilimiter(columnDelimiter);
         lineParser.setTrimTokens(trimTokens);
 
-        @if(!writeResultsToFile){
-            List<@(BaseClassName)Entity> result = 
-        }
-            reader.lines()
+        long skipped =0, taken =0;
+        leftReader = new BufferedReader(new FileReader(source));
+        FileInputStream rightInputStream = new FileInputStream(sourceRight);
+
+        if(this.bypassFirstRow){
+                leftReader.readLine();
+        }           
+        /////////////////////////////////////////////////////////////////////
+        List<@(BaseClassName)Entity> resultset = new ArrayList<>();
+        for(String[] left: leftReader.lines()
                 .filter(p -> !p.trim().startsWith(commentIndicator))
-                .map(p -> lineParser.split(p))
-                .map(p -> new @(BaseClassName)Entity(p))
-                @if(Where!= null && !Where.isEmpty()) {
-                    .filter(p -> (p.isValid == true) && (@Where))
+                .map(p -> lineParser.split(p)).collect(Collectors.toList())                 
+            ){
+            @if(take > -1 && (Ordering == null || Ordering.size() <= 0)){
+                if(taken >= @(take)) break;
+            }
+            try{
+                rightInputStream.getChannel().position(0);
+                rightReader = new BufferedReader(new InputStreamReader(rightInputStream));
+                if (this.bypassFirstRowRight) {
+                    rightReader.readLine();
                 }
-                else{
-                    .filter(p -> (p.isValid == true) )
+                for(String[] right: rightReader.lines()
+                        .filter(p -> !p.trim().startsWith(commentIndicator))
+                        .map(p -> lineParserRight.split(p)).collect(Collectors.toList()) 
+                    ){
+                    String[] joinedRow = Arrays.copyOf(left, left.length + right.length);
+                    System.arraycopy(right, 0, joinedRow, left.length, right.length);
+
+                    @/ if you rename the rowEntity, then its reference in DataReaderBuilder.extractUsedAttributes method should also change.
+                    @(BaseClassName)Entity rowEntity = new @(BaseClassName)Entity(joinedRow); // PRE: populate the keys
+                    if(!rowEntity.isValid) continue; // filter rows with wrong keys
+                    @/ check the join type here
+                    if(rowEntity.@(leftJoinKey) != rowEntity.@(rightJoinKey))
+                        continue; // INNER JOIN key match
+                    @if(Mid != null && Mid.size() > 0){
+                        rowEntity.midPopulate(); // populate attributes required by the where clause.
+                    }
+                    @if(Where!= null && !Where.isEmpty()) {
+                        if(!rowEntity.isValid || !(@Where)) continue; // check population validity and apply the Where clause. the negate of the where clause is checked here                       
+                    } else {
+                        if(!rowEntity.isValid) continue; // check population validity only
+                    }
+                    // if no sorting is requested, try applying limits here, otherwise do it when the join is finished
+                    // ORDERING HERE
+                    @if(skip > -1 && (Ordering == null || Ordering.size() <= 0)){ // if no ordering is imposed and limit.skip is present
+                        if(skipped++ < @(skip)) continue;
+                    }
+                    rowEntity.populate(); // populate the remaining attributes.
+                    resultset.add(rowEntity);
+                    @if(take > -1 && (Ordering == null || Ordering.size() <= 0)){
+                        if(taken++ >= @(take)) break;
+                    }
                 }
-                @//.parallel()
-		@if(Ordering!= null && Ordering.size() > 0) { // if order is present, populate and then sort
-                    .map(p->p.populate())
-                    .filter(p->p.isValid)
-                    .sorted(sorter)
-                    @if(skip > -1){
-                        .skip(@(skip))
-                    }
-                    @if(take > -1){
-                        .limit(@(take))
-                    }
-                } else { // if there no ordering, there no need for early post-population, its better to skip/ take and then post-populate
-                    @if(skip > -1){
-                        .skip(@(skip))
-                    }
-                    @if(take > -1){
-                        .limit(@(take))
-                    }
-                    .map(p->p.populate())
-                    .filter(p->p.isValid)                
-                }
-                @if(writeResultsToFile){
-                    .peek(p-> writeToFile(p))
-                    .count() // it is just to make the stream to be consumed
-                } else {
-                    .collect(Collectors.toList())
-                }
-                ;
+            } catch (IOException ex){
+                // throw a proper exception
+            }
+        }
+        @if(Ordering!= null && Ordering.size() > 0){ // the result should be sorted. in this case, the limit clause has not been applied yet
+            resultset = resultset.stream().sorted(sorter)
+            @if(skip > -1){
+                .skip(@(skip))
+            }
+            @if(take > -1){
+                .limit(@(take))
+            }
+            .collect(Collectors.toList());
+        }
         @if(writeResultsToFile){
+            resultset.stream()
+            .peek(p-> writeToFile(p))
+            .count(); // it is just to make the stream to be consumed
             if (writer != null){
                try {
                    writer.flush();
                    writer.close();
                } catch (IOException ex) {
-                   Logger.getLogger(TestReader.class.getName()).log(Level.SEVERE, null, ex);
+                   Logger.getLogger(@(BaseClassName)Entity.class.getName()).log(Level.SEVERE, null, ex);
                }        
             }
             return null;
-        } else {return result;}
-        
+        } else {
+            return resultset;
+        }
     }
 
     private void writeToFile(@(BaseClassName)Entity entity){
@@ -172,7 +215,7 @@ public class @(BaseClassName)Reader implements DataReader<@(BaseClassName)Entity
             String line = lineParser.join(@linePattern);
             writer.write(line + "\n");
         } catch (IOException ex) {
-            Logger.getLogger(TestReader.class.getName()).log(Level.SEVERE, null, ex); // change it with an AdpaterExcetion
+            Logger.getLogger(@(BaseClassName)Entity.class.getName()).log(Level.SEVERE, null, ex); // replace it with an AdpaterExcetion
         } 
     }
 
@@ -230,18 +273,22 @@ public class @(BaseClassName)Reader implements DataReader<@(BaseClassName)Entity
         return this;
     }
 
-    @Override
+    @@Override
     public DataReader<@(BaseClassName)Entity> bypassFirstRowRight(Boolean value) {
+        bypassFirstRowRight = value;
         return this;
     }
 
-    @Override
+    @@Override
     public DataReader<@(BaseClassName)Entity> sourceRight(String value) {
+        sourceRight = value;
         return this;
     }
 
-    @Override
+    @@Override
     public DataReader<@(BaseClassName)Entity> columnDelimiterRight(String value) {
+        columnDelimiterRight = value;
         return this;
     }
+
 }
