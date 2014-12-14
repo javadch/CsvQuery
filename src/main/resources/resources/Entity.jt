@@ -7,7 +7,9 @@
     List<AttributeInfo> Attributes,
     List<AttributeInfo> Pre,
     List<AttributeInfo> Mid,
-    List<AttributeInfo> Post
+    List<AttributeInfo> Post,
+    List<AttributeInfo> Post_Left,
+    List<AttributeInfo> Post_Right
 }
 
 package @(namespace);
@@ -61,6 +63,19 @@ public class @(BaseClassName)Entity {
             return this;
         }    
     }
+   @*
+    public @(BaseClassName)Entity populate(String joinType){
+        @/InnerJoin, OuterJoin, LeftOuterJoin, RightOuterJoin
+        if(joinType.equalsIgnoreCase(""))
+            return populateAll();
+        if(joinType.equalsIgnoreCase("InnerJoin"))
+            return populateAll();
+        if(joinType.equalsIgnoreCase("LeftOuterJoin"))
+            return populateLeft();
+        if(joinType.equalsIgnoreCase("RightOuterJoin"))
+            return populateRight();
+    }
+*@
     public @(BaseClassName)Entity populate(){
         @// populate all other attributes and release row
         @// make the object invalid if something went wrong
@@ -75,4 +90,29 @@ public class @(BaseClassName)Entity {
         row = null;
         return this;
     }
+
+    public @(BaseClassName)Entity populateLeft(){
+        try {
+            @for(AttributeInfo ad : Post_Left) {
+                @ad.name = @ad.forwardMapTranslated;
+            }
+        } catch (Exception ex) {
+            isValid = false;
+        }
+        row = null;
+        return this;
+    }
+
+    public @(BaseClassName)Entity populateRight(){
+        try {
+            @for(AttributeInfo ad : Post_Right) {
+                @ad.name = @ad.forwardMapTranslated;
+            }
+        } catch (Exception ex) {
+            isValid = false;
+        }
+        row = null;
+        return this;
+    }
 }
+

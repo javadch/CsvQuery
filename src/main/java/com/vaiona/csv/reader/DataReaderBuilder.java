@@ -336,11 +336,24 @@ public class DataReaderBuilder {
             // Single container does not the Mid attributes
             // Post list contains all the other attributes except those in the Pre
             entityContext.put("Post", postAttributes.values().stream().collect(Collectors.toList()));
+            // Post_Left and Post_Right should be emtpy in single container cases.
+            List<AttributeInfo> leftOuterItems = postAttributes.values().stream()
+                    .filter(p-> p.joinSide.equalsIgnoreCase("L"))
+                    .collect(Collectors.toList());
+            leftOuterItems.addAll(orderItems.keySet().stream().filter(p-> !leftOuterItems.contains(p)).collect(Collectors.toList()));
+            entityContext.put("Post_Left", leftOuterItems);
+            
+            List<AttributeInfo> rightOuterItems = postAttributes.values().stream()
+                    .filter(p-> p.joinSide.equalsIgnoreCase("R"))
+                    .collect(Collectors.toList());
+            rightOuterItems.addAll(orderItems.keySet().stream().filter(p-> !rightOuterItems.contains(p)).collect(Collectors.toList()));
+            entityContext.put("Post_Right", rightOuterItems);
             
             entity = generator.generate(this, "Entity", "Resource", entityContext);
             reader = generator.generate(this, "Reader", "Resource", readerContext);
         } else {
             // set pre to join keys, mid: where clause keys
+            entityContext.put("joinType", this.joinType);
             joinKeyAttributes.put(leftJoinKey, attributes.get(leftJoinKey));
             joinKeyAttributes.put(rightJoinKey, attributes.get(rightJoinKey));
             // Pre list contains the attribtes used as join keys
@@ -353,6 +366,17 @@ public class DataReaderBuilder {
                 .collect(Collectors.toMap(p->p.getKey(), p->p.getValue()));
             // Post list contains all the attributes except those used as join key or in the where clause
             entityContext.put("Post", postAttributes.values().stream().collect(Collectors.toList()));
+            // In case of outer join, if ordering (check also for frouping) is present, the ordering attributes should be unioned
+            // with the post population attributes, so that the sort method on the data reader should hev proper values populaed into the entity
+            List<AttributeInfo> leftOuterItems = postAttributes.values().stream()
+                    .filter(p-> p.joinSide.equalsIgnoreCase("L")).collect(Collectors.toList());
+            leftOuterItems.addAll(orderItems.keySet().stream().filter(p-> !leftOuterItems.contains(p)).collect(Collectors.toList()));
+            entityContext.put("Post_Left", leftOuterItems);
+            
+            List<AttributeInfo> rightOuterItems = postAttributes.values().stream()
+                    .filter(p-> p.joinSide.equalsIgnoreCase("R")).collect(Collectors.toList());
+            rightOuterItems.addAll(orderItems.keySet().stream().filter(p-> !rightOuterItems.contains(p)).collect(Collectors.toList()));
+            entityContext.put("Post_Right", rightOuterItems);            
 
             readerContext.put("joinType", this.joinType);
             readerContext.put("joinOperator", this.joinOperator);            
