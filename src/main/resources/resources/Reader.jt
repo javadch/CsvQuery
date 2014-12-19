@@ -226,21 +226,21 @@ public class @(BaseClassName)Reader implements DataReader<@(BaseClassName)Entity
 
     @@Override
     public DataReader<@(BaseClassName)Entity> bypassFirstRow(Boolean value){
-         bypassFirstRow = value;
+        bypassFirstRow = value;
         return this;
     }
 
-    @Override
+    @@Override
     public DataReader<@(BaseClassName)Entity> bypassFirstRowRight(Boolean value) {
         return this;
     }
 
-    @Override
+    @@Override
     public DataReader<@(BaseClassName)Entity> sourceRight(String value) {
         return this;
     }
 
-    @Override
+    @@Override
     public DataReader<@(BaseClassName)Entity> columnDelimiterRight(String value) {
         return this;
     }

@@ -59,23 +59,10 @@ public class @(BaseClassName)Entity {
             } catch (Exception ex) {
                 isValid = false;
             }
-            isValid = true;
             return this;
         }    
     }
-   @*
-    public @(BaseClassName)Entity populate(String joinType){
-        @/InnerJoin, OuterJoin, LeftOuterJoin, RightOuterJoin
-        if(joinType.equalsIgnoreCase(""))
-            return populateAll();
-        if(joinType.equalsIgnoreCase("InnerJoin"))
-            return populateAll();
-        if(joinType.equalsIgnoreCase("LeftOuterJoin"))
-            return populateLeft();
-        if(joinType.equalsIgnoreCase("RightOuterJoin"))
-            return populateRight();
-    }
-*@
+
     public @(BaseClassName)Entity populate(){
         @// populate all other attributes and release row
         @// make the object invalid if something went wrong
