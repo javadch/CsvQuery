@@ -1,8 +1,5 @@
 package com.vaiona.csv.reader;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
 public class TestEntity {
 
     public double Longitude;

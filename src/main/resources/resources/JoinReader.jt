@@ -5,6 +5,9 @@
 @args() {
     String namespace,
     String BaseClassName,
+    String LeftClassName,
+    String RightClassName,
+    String TargetRowType,
     String Where,
     String rowHeader,
     String linePattern,
@@ -41,7 +44,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.Arrays;
 
-public class @(BaseClassName)Reader implements DataReader<@(BaseClassName)Entity> {
+public class @(BaseClassName)Reader implements DataReader<@(TargetRowType), @(LeftClassName), @(RightClassName)> {
     BufferedReader leftReader, rightReader;
     BufferedWriter writer;
 
@@ -63,8 +66,8 @@ public class @(BaseClassName)Reader implements DataReader<@(BaseClassName)Entity
     LineParser lineParser       = new DefaultLineParser();
     LineParser lineParserRight  = new DefaultLineParser();
 
-    public List<@(BaseClassName)Entity> read()  throws FileNotFoundException, IOException {
-
+    public List<@(TargetRowType)> read(List<@(LeftClassName)> source1, List<@(RightClassName)> source2)  throws FileNotFoundException, IOException {
+    
         @if(Ordering!= null && Ordering.size() > 0) {
         Comparator<@(BaseClassName)Entity> sorter = new Comparator<@(BaseClassName)Entity>() {
                     @@Override
@@ -166,8 +169,8 @@ public class @(BaseClassName)Reader implements DataReader<@(BaseClassName)Entity
                         }
                         @/ if no sorting is requested, try applying limits here, otherwise do it when the join is finished
                         @/ ORDERING HERE
-                        @if(skip > -1 && (Ordering == null || Ordering.size() <= 0)){ // if no ordering is imposed and limit.skip is present
-                            if(skipped++ < @(skip)) continue;
+                        @if(skip > -1 && (Ordering == null || Ordering.size() <= 0)){ @/ if no ordering is imposed and limit.skip is present
+                            if(skipped++ < @(skip)) continue; @/ the current row should be skipped
                         }
                         rowEntity.populate(); // populate the remaining attributes.
                         resultset.add(rowEntity);
@@ -263,78 +266,78 @@ public class @(BaseClassName)Reader implements DataReader<@(BaseClassName)Entity
             String line = lineParser.join(@linePattern);
             writer.write(line + "\n");
         } catch (IOException ex) {
-            Logger.getLogger(@(BaseClassName)Entity.class.getName()).log(Level.SEVERE, null, ex); // replace it with an AdpaterExcetion
+            Logger.getLogger(@(BaseClassName)Entity.class.getName()).log(Level.SEVERE, null, ex); @/ replace it with an AdpaterExcetion
         } 
     }
 
     @@Override
-    public DataReader<@(BaseClassName)Entity> columnDelimiter(String value) {
+    public DataReader columnDelimiter(String value) {
         columnDelimiter = value;
         return this;
     }
 
     @@Override
-    public DataReader<@(BaseClassName)Entity> quoteMarker(String value) {
+    public DataReader quoteMarker(String value) {
         quoteMarker = value;
         return this;
     }
 
     @@Override
-    public DataReader<@(BaseClassName)Entity> trimTokens(boolean value) {
+    public DataReader trimTokens(boolean value) {
         trimTokens = value;
         return this;
     }
 
     @@Override
-    public DataReader<@(BaseClassName)Entity> typeDelimiter(String value) {
+    public DataReader typeDelimiter(String value) {
         typeDelimiter = value;
         return this;
     }
 
     @@Override
-    public DataReader<@(BaseClassName)Entity> unitDelimiter(String value) {
+    public DataReader unitDelimiter(String value) {
         unitDelimiter = value;
         return this;
     }
 
     @@Override
-    public DataReader<@(BaseClassName)Entity> missingValue(String value) {
+    public DataReader missingValue(String value) {
         missingValue = value;
         return this;
     }
     
     @@Override
-    public DataReader<@(BaseClassName)Entity> source(String value){
+    public DataReader source(String value){
         source = value;
         return this;
     }
     
     @@Override
-    public DataReader<@(BaseClassName)Entity> target(String value){
+    public DataReader target(String value){
         target = value;
         return this;
     }
 
     @@Override
-    public DataReader<@(BaseClassName)Entity> bypassFirstRow(Boolean value){
+    public DataReader bypassFirstRow(Boolean value){
          bypassFirstRow = value;
         return this;
     }
 
     @@Override
-    public DataReader<@(BaseClassName)Entity> bypassFirstRowRight(Boolean value) {
+    public DataReader bypassFirstRowRight(Boolean value) {
         bypassFirstRowRight = value;
         return this;
     }
 
     @@Override
-    public DataReader<@(BaseClassName)Entity> sourceRight(String value) {
+    public DataReader sourceRight(String value) {
         sourceRight = value;
         return this;
     }
 
     @@Override
-    public DataReader<@(BaseClassName)Entity> columnDelimiterRight(String value) {
+    public DataReader columnDelimiterRight(String value) {
         columnDelimiterRight = value;
         return this;
     }

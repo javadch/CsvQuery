@@ -1,5 +1,6 @@
 package com.vaiona.csv.reader;
 
+import com.vaiona.commons.data.DataReaderBase;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
@@ -8,20 +9,19 @@ import java.util.List;
  *
  * @author standard
  */
-public interface DataReader<T> {
-    DataReader<T> columnDelimiter(String value);
-    DataReader<T> columnDelimiterRight(String value);
-    DataReader<T> quoteMarker(String value);
-    DataReader<T> typeDelimiter(String value);
-    DataReader<T> unitDelimiter(String value);
-    DataReader<T> missingValue(String value);
-    DataReader<T> source(String value);
-    DataReader<T> sourceRight(String value);
-    DataReader<T> target(String value);
-    DataReader<T> bypassFirstRow(Boolean value);
-    DataReader<T> bypassFirstRowRight(Boolean value);
+public interface DataReader<T, S1, S2> extends DataReaderBase<T, S1, S2> {
+    DataReader<T, S1, S2> columnDelimiter(String value);
+    DataReader<T, S1, S2> columnDelimiterRight(String value);
+    DataReader<T, S1, S2> quoteMarker(String value);
+    DataReader<T, S1, S2> typeDelimiter(String value);
+    DataReader<T, S1, S2> unitDelimiter(String value);
+    DataReader<T, S1, S2> missingValue(String value);
+    DataReader<T, S1, S2> source(String value);
+    DataReader<T, S1, S2> sourceRight(String value);
+    DataReader<T, S1, S2> target(String value);
+    DataReader<T, S1, S2> bypassFirstRow(Boolean value);
+    DataReader<T, S1, S2> bypassFirstRowRight(Boolean value);
     //DataReader<T> lineParser(LineParser value);
     //DataReader<T> lineParserRight(LineParser value);
-    DataReader<T> trimTokens(boolean value);
-    List<T> read() throws FileNotFoundException, IOException;
+    DataReader<T, S1, S2> trimTokens(boolean value);
 }

@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class TestReader implements DataReader<TestEntity> {
+public class TestReader implements DataReader<TestEntity, TestEntity, TestEntity> {
 
     BufferedReader reader;
     BufferedWriter writer;
@@ -34,7 +34,7 @@ public class TestReader implements DataReader<TestEntity> {
     boolean trimTokens = true;
     LineParser lineParser = new DefaultLineParser();
 
-    public List<TestEntity> read() throws FileNotFoundException, IOException {
+    public List<TestEntity> read(List<TestEntity> source1, List<TestEntity> source2) throws FileNotFoundException, IOException {
         reader = new BufferedReader(new FileReader(source));
 
         if (this.bypassFirstRow) {
@@ -71,71 +71,71 @@ public class TestReader implements DataReader<TestEntity> {
     }
 
     @Override
-    public DataReader<TestEntity> columnDelimiter(String value) {
+    public DataReader columnDelimiter(String value) {
         columnDelimiter = value;
         return this;
     }
 
     @Override
-    public DataReader<TestEntity> quoteMarker(String value) {
+    public DataReader quoteMarker(String value) {
         quoteMarker = value;
         return this;
     }
 
     @Override
-    public DataReader<TestEntity> trimTokens(boolean value) {
+    public DataReader trimTokens(boolean value) {
         trimTokens = value;
         return this;
     }
 
     @Override
-    public DataReader<TestEntity> typeDelimiter(String value) {
+    public DataReader typeDelimiter(String value) {
         typeDelimiter = value;
         return this;
     }
 
     @Override
-    public DataReader<TestEntity> unitDelimiter(String value) {
+    public DataReader unitDelimiter(String value) {
         unitDelimiter = value;
         return this;
     }
 
     @Override
-    public DataReader<TestEntity> missingValue(String value) {
+    public DataReader missingValue(String value) {
         missingValue = value;
         return this;
     }
 
     @Override
-    public DataReader<TestEntity> source(String value) {
+    public DataReader source(String value) {
         source = value;
         return this;
     }
 
     @Override
-    public DataReader<TestEntity> target(String value) {
+    public DataReader target(String value) {
         target = value;
         return this;
     }
 
     @Override
-    public DataReader<TestEntity> bypassFirstRow(Boolean value) {
+    public DataReader bypassFirstRow(Boolean value) {
         bypassFirstRow = value;
         return this;
     }
 
     @Override
-    public DataReader<TestEntity> bypassFirstRowRight(Boolean value) {
+    public DataReader bypassFirstRowRight(Boolean value) {
         return this;
     }
 
     @Override
-    public DataReader<TestEntity> sourceRight(String value) {
+    public DataReader sourceRight(String value) {
         return this;
     }
 
     @Override
-    public DataReader<TestEntity> columnDelimiterRight(String value) {
+    public DataReader columnDelimiterRight(String value) {
         return this;
     }
     

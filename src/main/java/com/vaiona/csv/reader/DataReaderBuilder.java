@@ -16,43 +16,50 @@ public class DataReaderBuilder extends DataReaderBuilderBase{
     String rightColumnDelimiter = ",";
     String typeDlimiter = ":";
     String unitDlimiter = "::";
+    String sourceOfData = "container";
+
+    public String getSourceOfData(){ return columnDelimiter;}
+    public DataReaderBuilder sourceOfData(String value){
+        this.sourceOfData = value;
+        return this;
+    }
 
     public String getColumnDelimiter(){ return columnDelimiter;}
-    public DataReaderBuilder columnDelimiter(String columnDelimiter){
-        this.columnDelimiter = columnDelimiter;
+    public DataReaderBuilder columnDelimiter(String value){
+        this.columnDelimiter = value;
         return this;
     }
     
     public String getLeftColumnDelimiter(){ return columnDelimiter;}
-    public DataReaderBuilder leftColumnDelimiter(String columnDelimiter) {
-        this.columnDelimiter = columnDelimiter;
+    public DataReaderBuilder leftColumnDelimiter(String value) {
+        this.columnDelimiter = value;
         return this;
     }
 
     public String getRightColumnDelimiter(){ return rightColumnDelimiter;}
-    public DataReaderBuilder rightColumnDelimiter(String columnDelimiter) {
-        this.rightColumnDelimiter = columnDelimiter;
+    public DataReaderBuilder rightColumnDelimiter(String value) {
+        this.rightColumnDelimiter = value;
         return this;
     }
 
     public String getTypeDelimiter(){ return typeDlimiter;}
-    public DataReaderBuilder typeDlimiter(String typeDlimiter){
-        this.typeDlimiter = typeDlimiter;
+    public DataReaderBuilder typeDlimiter(String value){
+        this.typeDlimiter = value;
         return this;
     }
     
     public String getUnitDelimiter(){ return unitDlimiter;}
-    public DataReaderBuilder unitDlimiter(String unitDlimiter){
-        this.unitDlimiter = unitDlimiter;
+    public DataReaderBuilder unitDlimiter(String value){
+        this.unitDlimiter = value;
         return this;
     }
     
-    public DataReader<Object> build(Class classObject) throws IOException, ClassNotFoundException, NoSuchMethodException, 
+    public DataReader build(Class classObject) throws IOException, ClassNotFoundException, NoSuchMethodException, 
             InstantiationException, IllegalAccessException, IllegalArgumentException, 
             InvocationTargetException {
        
         
-        DataReader<Object> instance = (DataReader<Object>)ObjectCreator.load(classObject);    
+        DataReader<Object, Object, Object> instance = (DataReader<Object, Object, Object>)ObjectCreator.load(classObject);    
         instance
                 .columnDelimiter(this.columnDelimiter)
                 .columnDelimiterRight(this.rightColumnDelimiter)
@@ -109,17 +116,34 @@ public class DataReaderBuilder extends DataReaderBuilderBase{
         String header = String.join(columnDelimiter, attributes.values().stream().map(p-> p.name + ":" + p.internalDataType).collect(Collectors.toList()));
         readerContext.put("rowHeader", header);        
         String linePattern = String.join(",", attributes.values().stream().map(p-> "String.valueOf(entity." + p.name + ")").collect(Collectors.toList()));
-        readerContext.put("linePattern", linePattern);        
+        readerContext.put("linePattern", linePattern);     
+        readerContext.put("sourceOfData", sourceOfData);     
+        readerContext.put("LeftClassName", this.leftClassName); // used as both left and right sides' type.
+        readerContext.put("RightClassName", this.leftClassName); // in the single container it is not used by the reader, but shold be provided for compilation purposes.
+        
     }
     
     @Override
     protected void buildSingleSourceSegments(){
         super.buildSingleSourceSegments();
+        if(sourceOfData.equalsIgnoreCase("container")){
+            String otherCalssNames = (namespace + "." + baseClassName + "Entity");
+            readerContext.put("LeftClassName", "Object"); // used as both left and right sides' type.
+            readerContext.put("RightClassName", "Object"); // in the single container it is not used by the reader, but shold be provided for compilation purposes.
+            readerContext.put("TargetRowType", otherCalssNames);
+        } else if (sourceOfData.equalsIgnoreCase("variable")){
+            readerContext.put("LeftClassName", this.leftClassName); // used as both left and right sides' type.
+            readerContext.put("RightClassName", this.leftClassName); // in the single container it is not used by the reader, but shold be provided for compilation purposes.
+            readerContext.put("TargetRowType", this.leftClassName);            
+        }
     }
 
     @Override
     protected void buildJoinedSourceSegments(){
         super.buildJoinedSourceSegments();
+        readerContext.put("LeftClassName", "Object"); 
+        readerContext.put("RightClassName", "Object");
+        readerContext.put("TargetRowType", (namespace + "." + baseClassName + "Entity"));
     }
     
     

@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class TestReaderJoin implements DataReader<TestEntityJoin> {
+public class TestReaderJoin implements DataReader<TestEntityJoin, TestEntityJoin, TestEntityJoin> {
 
     BufferedReader leftReader, rightReader;
     BufferedWriter writer;
@@ -36,7 +36,7 @@ public class TestReaderJoin implements DataReader<TestEntityJoin> {
     LineParser lineParser = new DefaultLineParser();
     LineParser lineParserRight = new DefaultLineParser();
 
-    public List<TestEntityJoin> read() throws FileNotFoundException, IOException {
+    public List<TestEntityJoin> read(List<TestEntityJoin> source1, List<TestEntityJoin> source2) throws FileNotFoundException, IOException {
         leftSource = "D:\\Projects\\PhD\\Data\\leftJoin1.csv";
         sourceRight = "D:\\Projects\\PhD\\Data\\rightJoin1.csv";
         List<TestEntityJoin> resultset = new ArrayList<>();
@@ -106,55 +106,55 @@ public class TestReaderJoin implements DataReader<TestEntityJoin> {
     }
 
     @Override
-    public DataReader<TestEntityJoin> columnDelimiter(String value) {
+    public DataReader columnDelimiter(String value) {
         columnDelimiter = value;
         return this;
     }
 
     @Override
-    public DataReader<TestEntityJoin> quoteMarker(String value) {
+    public DataReader quoteMarker(String value) {
         quoteMarker = value;
         return this;
     }
 
     @Override
-    public DataReader<TestEntityJoin> trimTokens(boolean value) {
+    public DataReader trimTokens(boolean value) {
         trimTokens = value;
         return this;
     }
 
     @Override
-    public DataReader<TestEntityJoin> typeDelimiter(String value) {
+    public DataReader typeDelimiter(String value) {
         typeDelimiter = value;
         return this;
     }
 
     @Override
-    public DataReader<TestEntityJoin> unitDelimiter(String value) {
+    public DataReader unitDelimiter(String value) {
         unitDelimiter = value;
         return this;
     }
 
     @Override
-    public DataReader<TestEntityJoin> missingValue(String value) {
+    public DataReader missingValue(String value) {
         missingValue = value;
         return this;
     }
 
     @Override
-    public DataReader<TestEntityJoin> source(String value) {
+    public DataReader source(String value) {
         leftSource = value;
         return this;
     }
 
     @Override
-    public DataReader<TestEntityJoin> target(String value) {
+    public DataReader target(String value) {
         target = value;
         return this;
     }
 
     @Override
-    public DataReader<TestEntityJoin> bypassFirstRow(Boolean value) {
+    public DataReader bypassFirstRow(Boolean value) {
         bypassFirstRow = value;
         return this;
     }
@@ -166,19 +166,19 @@ public class TestReaderJoin implements DataReader<TestEntityJoin> {
 //    }
 
     @Override
-    public DataReader<TestEntityJoin> sourceRight(String value) {
+    public DataReader sourceRight(String value) {
         this.sourceRight = value;
         return this;
     }
 
     @Override
-    public DataReader<TestEntityJoin> bypassFirstRowRight(Boolean value) {
+    public DataReader bypassFirstRowRight(Boolean value) {
         this.bypassFirstRowRight = value;
         return this;
     }
 
     @Override
-    public DataReader<TestEntityJoin> columnDelimiterRight(String value) {
+    public DataReader columnDelimiterRight(String value) {
         this.columnDelimiterRight = value;
         return this;
     }
