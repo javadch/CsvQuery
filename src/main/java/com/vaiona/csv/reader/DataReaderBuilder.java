@@ -7,8 +7,11 @@ import com.vaiona.commons.data.FieldInfo;
 import com.vaiona.commons.types.TypeSystem;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.StringTokenizer;
 import java.util.stream.Collectors;
+import xqt.model.functions.AggregationCallInfo;
 
 public class DataReaderBuilder extends DataReaderBuilderBase{
 
@@ -53,6 +56,13 @@ public class DataReaderBuilder extends DataReaderBuilderBase{
         this.unitDlimiter = value;
         return this;
     }
+
+    List<AggregationCallInfo> aggregationCallInfo = new ArrayList<>();
+    public DataReaderBuilder addAggregates(List<AggregationCallInfo> value) {
+        aggregationCallInfo = value;
+        return this;
+    }
+
     
     public DataReader build(Class classObject) throws IOException, ClassNotFoundException, NoSuchMethodException, 
             InstantiationException, IllegalAccessException, IllegalArgumentException, 
@@ -113,14 +123,21 @@ public class DataReaderBuilder extends DataReaderBuilderBase{
     @Override
     protected void buildSharedSegments(){
         super.buildSharedSegments();
-        String header = String.join(columnDelimiter, attributes.values().stream().map(p-> p.name + ":" + p.internalDataType).collect(Collectors.toList()));
+        String header = String.join(columnDelimiter, resultEntityAttributes.values().stream().map(p-> p.name + ":" + p.internalDataType).collect(Collectors.toList()));
         readerContext.put("rowHeader", header);        
-        String linePattern = String.join(",", attributes.values().stream().map(p-> "String.valueOf(entity." + p.name + ")").collect(Collectors.toList()));
+        String linePattern = String.join(",", resultEntityAttributes.values().stream().map(p-> "String.valueOf(entity." + p.name + ")").collect(Collectors.toList()));
         readerContext.put("linePattern", linePattern);     
         readerContext.put("sourceOfData", sourceOfData);     
         readerContext.put("LeftClassName", this.leftClassName); // used as both left and right sides' type.
         readerContext.put("RightClassName", this.leftClassName); // in the single container it is not used by the reader, but shold be provided for compilation purposes.
-        
+        readerContext.put("AggregationCallInfos", this.aggregationCallInfo);
+        // do not move these items to the base class
+        rowEntityContext.put("namespace", namespace);
+        rowEntityContext.put("BaseClassName", baseClassName + "Row");
+        rowEntityContext.put("Attributes", rowEntityAttributes.values().stream().collect(Collectors.toList()));        
+        if(hasAggregate()){
+           resultEntityContext.put("RowEntityType", baseClassName + "Row");
+        }
     }
     
     @Override
@@ -283,6 +300,5 @@ public class DataReaderBuilder extends DataReaderBuilderBase{
 //        return sources;
 //    }
 
-    
 
 }

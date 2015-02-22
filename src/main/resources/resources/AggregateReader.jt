@@ -1,0 +1,293 @@
+@import com.vaiona.csv.reader.*
+@import com.vaiona.commons.data.*
+@import com.vaiona.commons.types.*;
+@import xqt.model.functions.*;
+
+@args() {
+    String sourceOfData,
+    boolean writeResultsToFile,
+    String rowHeader,
+    String linePattern,
+    String namespace,
+    String BaseClassName,
+    String LeftClassName,
+    String RightClassName,
+    String TargetRowType,
+    String Where,
+    Map<AttributeInfo, String> Ordering,
+    List<AttributeInfo> GroupBy,
+    List<xqt.model.functions.AggregationCallInfo> AggregationCallInfos,
+    Integer skip,
+    Integer take
+}
+
+package @(namespace);
+
+import @(namespace).*;
+import com.vaiona.commons.data.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import xqt.model.functions.*;
+import xqt.model.functions.aggregates.*;
+
+public class @(BaseClassName)Reader implements DataReader<@(TargetRowType), @(LeftClassName), @(RightClassName)> {
+
+    BufferedReader reader;
+    BufferedWriter writer;
+
+    //Map<String, FieldInfo> headers = new LinkedHashMap<>();
+
+    String  columnDelimiter     = ",";
+    String  quoteMarker       = "\"";
+    String  typeDelimiter       = ":";
+    String  unitDelimiter       = "::";
+    String  commentIndicator    = "#";
+    String  missingValue        = "NA";
+    String  source              = "";
+    String  target              = "";
+    boolean bypassFirstRow      = false;
+    boolean trimTokens          = true;
+    LineParser lineParser       = new DefaultLineParser();
+
+    public List<@(TargetRowType)> read(List<@(LeftClassName)> source1, List<@(RightClassName)> source2)  throws FileNotFoundException, IOException {
+        @if(Ordering!= null && Ordering.size() > 0) {
+        Comparator<@(TargetRowType)> sorter = new Comparator<@(TargetRowType)>() {
+                    @@Override
+                    public int compare(@(TargetRowType) left, @(TargetRowType) right){
+                    @for (Map.Entry<AttributeInfo, String> entry : Ordering.entrySet()) {
+                        @{
+                            DataTypeInfo dti = TypeSystem.getTypes().get(entry.getKey().conceptualDataType);
+                            AttributeInfo ad = entry.getKey();
+                        }
+                        @if(Ordering.size() == 1) {                            
+                            @if(entry.getValue().toUpperCase().equals("ASC")){
+                                return @(dti.getComparePattern().replace("$first$", "left." + (ad.name)).replace("$second$", "right." + (ad.name)));
+                            } else if(entry.getValue().toUpperCase().equals("DESC")) {
+                                return @(dti.getComparePattern().replace("$first$", "right." + (ad.name)).replace("$second$", "left." + (ad.name)));
+                            }
+                        } else {
+                            @if(entry_isFirst){
+                                if(@(dti.getComparePattern().replace("$first$", "left." + (ad.name)).replace("$second$", "right." + (ad.name))) != 0){
+                                    @if(entry.getValue().toUpperCase().equals("ASC")){
+                                        return @(dti.getComparePattern().replace("$first$", "left." + (ad.name)).replace("$second$", "right." + (ad.name)));
+                                    } else if(entry.getValue().toUpperCase().equals("DESC")) {
+                                        return @(dti.getComparePattern().replace("$first$", "right." + (ad.name)).replace("$second$", "left." + (ad.name)));
+                                    }
+                                }
+                            } else if (!entry_isFirst && !entry_isLast) { 
+                                else if(@(dti.getComparePattern().replace("$first$", "left." + (ad.name)).replace("$second$", "right." + (ad.name))) != 0){
+                                    @if(entry.getValue().toUpperCase().equals("ASC")){
+                                        return @(dti.getComparePattern().replace("$first$", "left." + (ad.name)).replace("$second$", "right." + (ad.name)));
+                                    } else if(entry.getValue().toUpperCase().equals("DESC")) {
+                                        return @(dti.getComparePattern().replace("$first$", "right." + (ad.name)).replace("$second$", "left." + (ad.name)));
+                                    }
+                                }
+                            } else if (entry_isLast) {
+                                else {
+                                    @if(entry.getValue().toUpperCase().equals("ASC")){
+                                        return @(dti.getComparePattern().replace("$first$", "left." + (ad.name)).replace("$second$", "right." + (ad.name)));
+                                    } else if(entry.getValue().toUpperCase().equals("DESC")) {
+                                        return @(dti.getComparePattern().replace("$first$", "right." + (ad.name)).replace("$second$", "left." + (ad.name)));
+                                    }
+                                }
+                            }
+                        }
+                    }
+               }
+              };
+        }
+
+        lineParser.setQuoteMarker(quoteMarker);
+        lineParser.setDilimiter(columnDelimiter);
+        lineParser.setTrimTokens(trimTokens);
+
+        @if(sourceOfData.equalsIgnoreCase("container")){
+            reader = new BufferedReader(new FileReader(source));
+            if(this.bypassFirstRow){
+                    reader.readLine();
+            }     
+            long result =
+            @if(writeResultsToFile){
+                @/ create the file and make it empty. when there is no record to write to the output file, the file should be reset 
+                writer = new BufferedWriter(new FileWriter(target));
+                writer.write("@rowHeader" + "\n");
+            }
+            reader.lines()
+                .filter(p -> !p.trim().startsWith(commentIndicator))
+                .map(p -> lineParser.split(p))
+                .map(p -> new @(BaseClassName)RowEntity(p))
+            @if(Where!= null && !Where.isEmpty()) {
+                .filter(p -> (p.isValid == true) && (@Where))
+            }
+            else{
+                .filter(p -> (p.isValid == true) )
+            }
+            @//.parallel()
+            .map(p->p.populate())
+            .map(p-> updateRrsultRow(p))
+            .count(); // make the pipe, process the input
+            return (resultset.values().stream().collect(Collectors.toList()));
+        }
+    }
+
+    @if(sourceOfData.equalsIgnoreCase("variable")) {
+        private void writeToFile(@(LeftClassName) entity)
+    } else {
+        private void writeToFile(@(BaseClassName)Entity entity)
+    }
+        {
+        try {
+            if (writer == null) {
+                writer = new BufferedWriter(new FileWriter(target));
+                writer.write("@rowHeader" + "\n");
+            }
+            String line = lineParser.join(@linePattern);
+            writer.write(line + "\n");
+            @/ Logger.getLogger(this.getClass().getName()).info("A row is written to the file.\n");
+        } catch (IOException ex) {
+            Logger.getLogger(TestReader.class.getName()).log(Level.SEVERE, null, ex); @/ change it with an AdpaterExcetion
+        } 
+    }
+
+    @/ keys are partitioning the resultsets to single entries, so that there is one result row per key and aggregate functions should work and update those rows
+    private String getKey(@(BaseClassName)RowEntity rowEntity){
+        String key = "1"; @/ there is only one group, which means the query contains some aggregate functions but not grouping
+        @if(GroupBy!= null && GroupBy.size() > 0) {
+            @for(AttributeInfo ad : GroupBy) {
+                key = key + rowEntity.@(ad.name).toString(); // adds the values of the entity attribute, as determined by the group by, to the key
+            }
+        } 
+        return key;
+    }
+
+    Map<String, @(TargetRowType)> resultset = new HashMap<>();
+    @/ if there is a result row associted to the key, it will be returned, otherwise a result item is created and added to the resultset
+    @*
+    private @(TargetRowType) getResultEntity(@(BaseClassName)RowEntity rowEntity){
+        String key = getKey(rowEntity);
+        @(TargetRowType) resultRow;
+        if(resultset.containsKey(key)){
+            resultRow = resultset.get(key);
+        } else {
+            resultRow = new @(TargetRowType)();
+            resultset.put(key, resultRow);
+            createRunningAggregates(key);
+        }
+        updateRrsultRow(resultRow, rowEntity, key);
+    }
+    *@
+    Map<String, Map<String, AggregateFunction>> runningAggregates = new HashMap<>(); @/ key, aggregate function name as in the result row attribute, the actual aggregate function as in the function specification
+
+    @/ create a list of aggregate functions as requested by the aggregate function references of the query, one instance per group
+    private void createRunningAggregates(String key){
+        if(!runningAggregates.containsKey(key)){
+            Map<String, AggregateFunction> aggregatesForKey = new HashMap<>();
+            @/ create a new agg. map for the key
+            @{int counter =0;}
+            @for(AggregationCallInfo callInfo : AggregationCallInfos) {
+                @/ consider loading the jar library!
+                AggregateFunction agg@(counter) = new @(callInfo.getFunction().getFunctionSpecification().getImplementation().getNamespace()).@(callInfo.getFunction().getFunctionSpecification().getImplementation().getClassName())(); @/namespace.classname()                
+                aggregatesForKey.put("@(callInfo.getAliasName())", agg@(counter++));
+            }
+
+            runningAggregates.put(key, aggregatesForKey);
+        }
+    }
+
+    //private void updateRrsultRow(@(TargetRowType) resultRow, @(BaseClassName)RowEntity rowEntity, String key){
+    private @(TargetRowType) updateRrsultRow(@(BaseClassName)RowEntity rowEntity){
+        String key = getKey(rowEntity);
+        @(TargetRowType) resultRow;
+        if(resultset.containsKey(key)){
+            resultRow = resultset.get(key);
+        } else {
+            resultRow = new @(TargetRowType)();
+            resultset.put(key, resultRow);
+            createRunningAggregates(key);
+        }
+        resultRow.populate(rowEntity, runningAggregates.get(key));
+        return resultRow;
+    }
+
+    @@Override
+    public DataReader columnDelimiter(String value) {
+        columnDelimiter = value;
+        return this;
+    }
+
+    @@Override
+    public DataReader quoteMarker(String value) {
+        quoteMarker = value;
+        return this;
+    }
+
+    @@Override
+    public DataReader trimTokens(boolean value) {
+        trimTokens = value;
+        return this;
+    }
+
+    @@Override
+    public DataReader typeDelimiter(String value) {
+        typeDelimiter = value;
+        return this;
+    }
+
+    @@Override
+    public DataReader unitDelimiter(String value) {
+        unitDelimiter = value;
+        return this;
+    }
+
+    @@Override
+    public DataReader missingValue(String value) {
+        missingValue = value;
+        return this;
+    }
+    
+    @@Override
+    public DataReader source(String value){
+        source = value;
+        return this;
+    }
+    
+    @@Override
+    public DataReader target(String value){
+        target = value;
+        return this;
+    }
+
+    @@Override
+    public DataReader bypassFirstRow(Boolean value){
+        bypassFirstRow = value;
+        return this;
+    }
+
+    @@Override
+    public DataReader bypassFirstRowRight(Boolean value) {
+        return this;
+    }
+
+    @@Override
+    public DataReader sourceRight(String value) {
+        return this;
+    }
+
+    @@Override
+    public DataReader columnDelimiterRight(String value) {
+        return this;
+    }
+}

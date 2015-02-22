@@ -1,9 +1,11 @@
 @import com.vaiona.csv.reader.*
 @import com.vaiona.commons.data.*
+@import xqt.model.functions.*;
 
 @args() {
     String namespace,
     String BaseClassName,
+    String RowEntityType,
     List<AttributeInfo> Attributes,
     List<AttributeInfo> Pre,
     List<AttributeInfo> Mid,
@@ -16,19 +18,23 @@ package @(namespace);
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import xqt.model.functions.*;
+import xqt.model.functions.aggregates.*;
 
 public class @(BaseClassName)Entity {
 
-    @for(AttributeInfo ad : Attributes) {
-        public @ad.runtimeType @ad.name;
-        @*
-        @if(ad.runtimeType.equals("Date") || ad.runtimeType.equals("String")){
+    @if(Attributes != null && Attributes.size() > 0){
+        @for(AttributeInfo ad : Attributes) {
             public @ad.runtimeType @ad.name;
-        } 
-        else{
-            public @ad.runtimeType.toLowerCase() @ad.name;
+            @*
+            @if(ad.runtimeType.equals("Date") || ad.runtimeType.equals("String")){
+                public @ad.runtimeType @ad.name;
+            } 
+            else{
+                public @ad.runtimeType.toLowerCase() @ad.name;
+            }
+            *@
         }
-        *@
     }
     public boolean isValid = true; @//set it to false if the object is not valid for any reason    
     private String[] row; @// should be a weak reference
@@ -63,40 +69,69 @@ public class @(BaseClassName)Entity {
         }    
     }
 
-    public @(BaseClassName)Entity populate(){
-        @// populate all other attributes and release row
-        @// make the object invalid if something went wrong
-        @// apply data conversion checks
-        try {
-            @for(AttributeInfo ad : Post) {
-                @ad.name = @ad.forwardMapTranslated;
+    @if(RowEntityType == null || RowEntityType.isEmpty()){ @/ normal populate
+        public @(BaseClassName)Entity populate(){
+            @// populate all other attributes and release row
+            @// make the object invalid if something went wrong
+            @// apply data conversion checks
+            @if(Post != null && Post.size() > 0){
+                try {
+                    @for(AttributeInfo ad : Post) {
+                        @ad.name = @ad.forwardMapTranslated;
+                    }
+                } catch (Exception ex) {
+                    isValid = false;
+                }
             }
-        } catch (Exception ex) {
-            isValid = false;
+            row = null;
+            return this;
         }
-        row = null;
-        return this;
+    } else { // aggregate functions are present. populate based on on row entity.
+        public @(BaseClassName)Entity (){
+            @/ nothing to do here, it is the result entity constructed from the aggregation functions, via the following populate function 
+        }
+
+        public @(BaseClassName)Entity populate(@(RowEntityType)Entity rowEntity, java.util.Map<String, AggregateFunction> functions){
+            @// populate all other attributes and release row
+            @// make the object invalid if something went wrong
+            @// apply data conversion checks
+            @if(Post != null && Post.size() > 0){
+                try {
+                    @for(AttributeInfo ad : Post) {
+                        @ad.name = @ad.forwardMapTranslated;
+                    }
+                } catch (Exception ex) {
+                    isValid = false;
+                }
+            }
+            row = null;
+            return this;
+        }
     }
 
     public @(BaseClassName)Entity populateLeft(){
-        try {
-            @for(AttributeInfo ad : Post_Left) {
-                @ad.name = @ad.forwardMapTranslated;
+        @if(Post_Left != null && Post_Left.size() > 0){
+            try {
+                @for(AttributeInfo ad : Post_Left) {
+                    @ad.name = @ad.forwardMapTranslated;
+                }
+            } catch (Exception ex) {
+                isValid = false;
             }
-        } catch (Exception ex) {
-            isValid = false;
         }
         row = null;
         return this;
     }
 
     public @(BaseClassName)Entity populateRight(){
-        try {
-            @for(AttributeInfo ad : Post_Right) {
-                @ad.name = @ad.forwardMapTranslated;
+        @if(Post_Right != null && Post_Right.size() > 0){
+            try {
+                @for(AttributeInfo ad : Post_Right) {
+                    @ad.name = @ad.forwardMapTranslated;
+                }
+            } catch (Exception ex) {
+                isValid = false;
             }
-        } catch (Exception ex) {
-            isValid = false;
         }
         row = null;
         return this;
