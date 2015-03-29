@@ -165,7 +165,7 @@ public class @(BaseClassName)Reader implements DataReader<@(TargetRowType), @(Le
                        writer.flush();
                        writer.close();
                    } catch (IOException ex) {
-                       Logger.getLogger(TestReader.class.getName()).log(Level.SEVERE, null, ex);
+                       Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);
                    }        
                 }
                 @/ Logger.getLogger(this.getClass().getName()).info("Number of retrieved records:" + result + ".\n");
@@ -240,7 +240,7 @@ public class @(BaseClassName)Reader implements DataReader<@(TargetRowType), @(Le
             writer.write(line + "\n");
             @/ Logger.getLogger(this.getClass().getName()).info("A row is written to the file.\n");
         } catch (IOException ex) {
-            Logger.getLogger(TestReader.class.getName()).log(Level.SEVERE, null, ex); @/ change it with an AdpaterExcetion
+            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex); @/ change it with an AdpaterExcetion
         } 
     }
 

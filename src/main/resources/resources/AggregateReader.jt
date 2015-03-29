@@ -4,6 +4,7 @@
 @import xqt.model.functions.*;
 
 @args() {
+    List<AttributeInfo> GroupBy,
     String sourceOfData,
     boolean writeResultsToFile,
     String rowHeader,
@@ -15,7 +16,6 @@
     String TargetRowType,
     String Where,
     Map<AttributeInfo, String> Ordering,
-    List<AttributeInfo> GroupBy,
     List<xqt.model.functions.AggregationCallInfo> AggregationCallInfos,
     Integer skip,
     Integer take
@@ -139,14 +139,51 @@ public class @(BaseClassName)Reader implements DataReader<@(TargetRowType), @(Le
             .map(p->p.populate())
             .map(p-> updateRrsultRow(p))
             .count(); // make the pipe, process the input
-            return (resultset.values().stream().collect(Collectors.toList()));
+            @if(!writeResultsToFile){
+                return (
+                    resultset.values().stream()
+                    @if(Ordering!= null && Ordering.size() > 0) {
+                        .sorted(sorter)
+                    }
+                    @if(skip > -1){
+                        .skip(@(skip))
+                    }
+                    @if(take > -1){
+                        .limit(@(take))
+                    }  
+                    .collect(Collectors.toList())
+                );
+            } else {
+                resultset.values().stream()
+                @if(Ordering!= null && Ordering.size() > 0) {
+                    .sorted(sorter)
+                }
+                @if(skip > -1){
+                    .skip(@(skip))
+                }
+                @if(take > -1){
+                    .limit(@(take))
+                }  
+                .peek(p-> writeToFile(p))
+                .count(); // it is just to make the stream to be consumed
+                if (writer != null){
+                   try {
+                       writer.flush();
+                       writer.close();
+                   } catch (IOException ex) {
+                       Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);
+                   }        
+                }
+                @/ Logger.getLogger(this.getClass().getName()).info("Number of retrieved records:" + result + ".\n");
+                return null;
+            }            
         }
     }
 
     @if(sourceOfData.equalsIgnoreCase("variable")) {
-        private void writeToFile(@(LeftClassName) entity)
+        private void writeToFile(@(TargetRowType) entity)
     } else {
-        private void writeToFile(@(BaseClassName)Entity entity)
+        private void writeToFile(@(TargetRowType) entity)
     }
         {
         try {
@@ -158,7 +195,7 @@ public class @(BaseClassName)Reader implements DataReader<@(TargetRowType), @(Le
             writer.write(line + "\n");
             @/ Logger.getLogger(this.getClass().getName()).info("A row is written to the file.\n");
         } catch (IOException ex) {
-            Logger.getLogger(TestReader.class.getName()).log(Level.SEVERE, null, ex); @/ change it with an AdpaterExcetion
+            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex); @/ change it with an AdpaterExcetion
         } 
     }
 
@@ -166,7 +203,9 @@ public class @(BaseClassName)Reader implements DataReader<@(TargetRowType), @(Le
     private String getKey(@(BaseClassName)RowEntity rowEntity){
         String key = "1"; @/ there is only one group, which means the query contains some aggregate functions but not grouping
         @if(GroupBy!= null && GroupBy.size() > 0) {
+            // in the group by
             @for(AttributeInfo ad : GroupBy) {
+                // in the loop
                 key = key + rowEntity.@(ad.name).toString(); // adds the values of the entity attribute, as determined by the group by, to the key
             }
         } 
