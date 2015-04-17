@@ -67,16 +67,18 @@ public class DataReaderBuilder extends DataReaderBuilderBase{
     public DataReader build(Class classObject) throws IOException, ClassNotFoundException, NoSuchMethodException, 
             InstantiationException, IllegalAccessException, IllegalArgumentException, 
             InvocationTargetException {
-       
-        
-        DataReader<Object, Object, Object> instance = (DataReader<Object, Object, Object>)ObjectCreator.load(classObject);    
-        instance
-                .columnDelimiter(this.columnDelimiter)
-                .columnDelimiterRight(this.rightColumnDelimiter)
-                .typeDelimiter(this.typeDlimiter)
-                .unitDelimiter(this.unitDlimiter);
-        return instance;
-
+       try{        
+            DataReader<Object, Object, Object> instance = (DataReader<Object, Object, Object>)ObjectCreator.createInstance(classObject);    
+            instance
+                    .columnDelimiter(this.columnDelimiter)
+                    .columnDelimiterRight(this.rightColumnDelimiter)
+                    .typeDelimiter(this.typeDlimiter)
+                    .unitDelimiter(this.unitDlimiter);
+            return instance;
+       }catch(Exception ex){
+           // better to escalate the exception
+           return null;
+       }
     }
 
     @Override

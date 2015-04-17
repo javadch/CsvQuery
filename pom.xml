@@ -2,8 +2,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.vaiona</groupId>
-    <artifactId>csvQuery</artifactId>
-    <name>CSV Query</name>
+    <artifactId>vaiona.csvQuery</artifactId>
+    <name>CSV Query (vaiona.csvQuery)</name>
     <description>A fast csv querying facility</description>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
@@ -19,15 +19,9 @@
             <version>1.0-b11-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>Commons</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
             <groupId>xqt</groupId>
             <artifactId>xqt.model</artifactId>
             <version>1.0-SNAPSHOT</version>
-            <type>jar</type>
         </dependency>
     </dependencies>
     <properties>
