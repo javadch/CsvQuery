@@ -142,7 +142,7 @@ public class @(BaseClassName)Reader implements DataReader<@(TargetRowType), @(Le
                 @if(take > -1){
                     .limit(@(take))
                 }
-            } else { // if there no ordering, there no need for early post-population, its better to skip/ take and then post-populate
+            } else { @/ if there no ordering, there no need for early post-population, its better to skip/ take and then post-populate
                 @if(skip > -1){
                     .skip(@(skip))
                 }
