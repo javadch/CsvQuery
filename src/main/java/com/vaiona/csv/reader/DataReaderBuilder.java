@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.StringTokenizer;
 import java.util.stream.Collectors;
 import xqt.model.functions.AggregationCallInfo;
+import xqt.model.functions.FunctionImplementation;
 
 public class DataReaderBuilder extends DataReaderBuilderBase{
 
@@ -88,15 +89,18 @@ public class DataReaderBuilder extends DataReaderBuilderBase{
                 stringTokenizer.hasMoreTokens();) {
             String token = stringTokenizer.nextToken();
             boolean found = false;
-            if(!rightSide && fields.containsKey(token)){
-                FieldInfo fd = fields.get(token);
+            String properCaseToken = token;
+            if(!namesCaseSensitive)
+                properCaseToken = token.toLowerCase();
+            if(!rightSide && fields.containsKey(properCaseToken)){
+                FieldInfo fd = fields.get(properCaseToken);
                 // need for a type check
                 String temp = TypeSystem.getTypes().get(fd.conceptualDataType).getCastPattern().replace("$data$", "row[" + fd.index + "]");
                 translated = translated + " " + temp;
                 found = true;
             }
-            if(rightSide && rightFields.containsKey(token)){
-                FieldInfo fd = rightFields.get(token);
+            if(rightSide && rightFields.containsKey(properCaseToken)){
+                FieldInfo fd = rightFields.get(properCaseToken);
                 // need for a type check
                 // the righside attributes reffer to the right side fields.Tthe Entity is a product of a line of the left and the right container
                 // The generated code, creates the product by concatenating the left and right string arrays and passes them as the cotr argument 
@@ -155,6 +159,19 @@ public class DataReaderBuilder extends DataReaderBuilderBase{
             readerContext.put("RightClassName", this.leftClassName); // in the single container it is not used by the reader, but shold be provided for compilation purposes.
             readerContext.put("TargetRowType", this.leftClassName);            
         }
+        // it is a test case for the aggregate reader, delete it from here. it is safe
+//        AggregationCallInfo callInfo = ((List<AggregationCallInfo>)readerContext.get("AggregationCallInfos")).get(0);
+//        FunctionImplementation xm = callInfo
+//                .getFunction().getFunctionSpecification().getImplementations().stream()
+//                .filter(p->p.getDialect().equalsIgnoreCase("default"))
+//                .findFirst().get();        
+//        xm = null;
+//        for(FunctionImplementation fm : callInfo.getFunction().getFunctionSpecification().getImplementations()){
+//            if(fm.getDialect().equalsIgnoreCase("default")){
+//                xm = fm;
+//                break;
+//            }
+//        }
     }
 
     @Override
