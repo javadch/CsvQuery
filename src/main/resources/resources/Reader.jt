@@ -9,6 +9,9 @@
     String linePattern,
     String namespace,
     String BaseClassName,
+    String RecordClassName,
+    String EntityClassName,
+    String ReaderClassName,
     String LeftClassName,
     String RightClassName,
     String TargetRowType,
@@ -37,7 +40,7 @@ import java.util.stream.Collectors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class @(BaseClassName)Reader implements DataReader<@(TargetRowType), @(LeftClassName), @(RightClassName)> {
+public class @(ReaderClassName) implements DataReader<@(TargetRowType), @(LeftClassName), @(RightClassName)> {
 
     BufferedReader reader;
     BufferedWriter writer;
@@ -114,7 +117,7 @@ public class @(BaseClassName)Reader implements DataReader<@(TargetRowType), @(Le
                     reader.readLine();
             }           
             @if(!writeResultsToFile){
-                List<@(BaseClassName)Entity> result = 
+                List<@(EntityClassName)> result = 
             } else {
                 @/ create the file and make it empty. when there is no record to write to the output file, the file should be reset 
                 writer = new BufferedWriter(new FileWriter(target));
@@ -124,7 +127,7 @@ public class @(BaseClassName)Reader implements DataReader<@(TargetRowType), @(Le
             reader.lines()
                 .filter(p -> !p.trim().startsWith(commentIndicator))
                 .map(p -> lineParser.split(p))
-                .map(p -> new @(BaseClassName)Entity(p))
+                .map(p -> new @(EntityClassName)(p))
             @if(Where!= null && !Where.isEmpty()) {
                 .filter(p -> (p.isValid == true) && (@Where))
             }
@@ -173,7 +176,7 @@ public class @(BaseClassName)Reader implements DataReader<@(TargetRowType), @(Le
             } else {return result;}
         } else if (sourceOfData.equalsIgnoreCase("variable")) {
             @if(!writeResultsToFile){
-                List<@(BaseClassName)Entity> result = null;
+                List<@(EntityClassName)> result = null;
             } else {
                 @/ create the file and make it empty. when there is no record to write to the output file, the file should be reset 
                 @/ Logger.getLogger(this.getClass().getName()).info("Target file name is:" + target + ".\n");
@@ -226,9 +229,9 @@ public class @(BaseClassName)Reader implements DataReader<@(TargetRowType), @(Le
     @if(sourceOfData.equalsIgnoreCase("variable")) {
         private void writeToFile(@(LeftClassName) entity)
     } else if (sourceOfData.equalsIgnoreCase("variable")) {
-        private void writeToFile(@(BaseClassName)Entity entity)
+        private void writeToFile(@(EntityClassName) entity)
     } else {
-        private void writeToFile(@(BaseClassName)Entity entity)
+        private void writeToFile(@(EntityClassName) entity)
     }
         {
         try {

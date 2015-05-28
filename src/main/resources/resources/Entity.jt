@@ -5,7 +5,9 @@
 @args() {
     String namespace,
     String BaseClassName,
-    String RowEntityType,
+    String RecordClassName,
+    String EntityClassName,
+    String ReaderClassName,
     List<AttributeInfo> Attributes,
     List<AttributeInfo> Pre,
     List<AttributeInfo> Mid,
@@ -21,7 +23,7 @@ import java.util.Date;
 import xqt.model.functions.*;
 import xqt.model.functions.aggregates.*;
 
-public class @(BaseClassName)Entity {
+public class @(EntityClassName) {
 
     @if(Attributes != null && Attributes.size() > 0){
         @for(AttributeInfo ad : Attributes) {
@@ -39,7 +41,7 @@ public class @(BaseClassName)Entity {
     public boolean isValid = true; @//set it to false if the object is not valid for any reason    
     private String[] row; @// should be a weak reference
     
-    public @(BaseClassName)Entity (String[] row){
+    public @(EntityClassName) (String[] row){
         // if there is no where clause, usually there is no need for a pre population, hence, the Pre is empty
         // in case of JOIN, the ctor initializes the join keys
         @if(Pre != null && Pre.size() > 0){ 
@@ -57,7 +59,7 @@ public class @(BaseClassName)Entity {
     }
 
     @if(Mid != null && Mid.size() > 0){ 
-        public @(BaseClassName)Entity midPopulate() {
+        public @(EntityClassName) midPopulate() {
             try {
                 @for(AttributeInfo ad : Mid) {
                     @ad.name = @ad.forwardMapTranslated;
@@ -69,8 +71,8 @@ public class @(BaseClassName)Entity {
         }    
     }
 
-    @if(RowEntityType == null || RowEntityType.isEmpty()){ @/ normal populate
-        public @(BaseClassName)Entity populate(){
+    @if(RecordClassName == null || RecordClassName.isEmpty()){ @/ normal populate
+        public @(EntityClassName) populate(){
             @// populate all other attributes and release row
             @// make the object invalid if something went wrong
             @// apply data conversion checks
@@ -87,11 +89,11 @@ public class @(BaseClassName)Entity {
             return this;
         }
     } else { // aggregate functions are present. populate based on on row entity.
-        public @(BaseClassName)Entity (){
-            @/ nothing to do here, it is the result entity constructed from the aggregation functions, via the following populate function 
+        public @(EntityClassName) (){
+            @/ nothing to do here, the result entity constructed from the aggregation functions, via the following populate function 
         }
 
-        public @(BaseClassName)Entity populate(@(RowEntityType)Entity rowEntity, java.util.Map<String, AggregateFunction> functions){
+        public @(EntityClassName) populate(@(RecordClassName) rowEntity, java.util.Map<String, AggregateFunction> functions){
             @// populate all other attributes and release row
             @// make the object invalid if something went wrong
             @// apply data conversion checks
@@ -109,7 +111,7 @@ public class @(BaseClassName)Entity {
         }
     }
 
-    public @(BaseClassName)Entity populateLeft(){
+    public @(EntityClassName) populateLeft(){
         @if(Post_Left != null && Post_Left.size() > 0){
             try {
                 @for(AttributeInfo ad : Post_Left) {
@@ -123,7 +125,7 @@ public class @(BaseClassName)Entity {
         return this;
     }
 
-    public @(BaseClassName)Entity populateRight(){
+    public @(EntityClassName) populateRight(){
         @if(Post_Right != null && Post_Right.size() > 0){
             try {
                 @for(AttributeInfo ad : Post_Right) {

@@ -5,6 +5,9 @@
 @args() {
     String namespace,
     String BaseClassName,
+    String RecordClassName,
+    String EntityClassName,
+    String ReaderClassName,
     String LeftClassName,
     String RightClassName,
     String TargetRowType,
@@ -44,7 +47,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.Arrays;
 
-public class @(BaseClassName)Reader implements DataReader<@(TargetRowType), @(LeftClassName), @(RightClassName)> {
+public class @(ReaderClassName) implements DataReader<@(TargetRowType), @(LeftClassName), @(RightClassName)> {
     BufferedReader leftReader, rightReader;
     BufferedWriter writer;
 
@@ -69,9 +72,9 @@ public class @(BaseClassName)Reader implements DataReader<@(TargetRowType), @(Le
     public List<@(TargetRowType)> read(List<@(LeftClassName)> source1, List<@(RightClassName)> source2)  throws FileNotFoundException, IOException {
     
         @if(Ordering!= null && Ordering.size() > 0) {
-        Comparator<@(BaseClassName)Entity> sorter = new Comparator<@(BaseClassName)Entity>() {
+        Comparator<@(EntityClassName)> sorter = new Comparator<@(EntityClassName)>() {
                     @@Override
-                    public int compare(@(BaseClassName)Entity left, @(BaseClassName)Entity right){
+                    public int compare(@(EntityClassName) left, @(EntityClassName) right){
                     @for (Map.Entry<AttributeInfo, String> entry : Ordering.entrySet()) {
                         @{
                             DataTypeInfo dti = TypeSystem.getTypes().get(entry.getKey().conceptualDataType);
@@ -131,7 +134,7 @@ public class @(BaseClassName)Reader implements DataReader<@(TargetRowType), @(Le
                 leftReader.readLine();
         }           
         /////////////////////////////////////////////////////////////////////
-        List<@(BaseClassName)Entity> resultset = new ArrayList<>();
+        List<@(EntityClassName)> resultset = new ArrayList<>();
         for(String[] left: leftReader.lines()
                 .filter(p -> !p.trim().startsWith(commentIndicator))
                 .map(p -> lineParser.split(p)).collect(Collectors.toList())                 
@@ -153,7 +156,7 @@ public class @(BaseClassName)Reader implements DataReader<@(TargetRowType), @(Le
                     System.arraycopy(right, 0, joinedRow, left.length, right.length);
 
                     @/ if you rename the rowEntity, then its reference in DataReaderBuilder.extractUsedAttributes method should also change.
-                    @(BaseClassName)Entity rowEntity = new @(BaseClassName)Entity(joinedRow); // PRE: populate the keys
+                    @(EntityClassName) rowEntity = new @(EntityClassName)(joinedRow); // PRE: populate the keys
                     if(!rowEntity.isValid) continue; // filter rows with wrong keys
                     @/ check the join type here
                     @if(joinType.equalsIgnoreCase("InnerJoin")){
@@ -248,7 +251,7 @@ public class @(BaseClassName)Reader implements DataReader<@(TargetRowType), @(Le
                    writer.flush();
                    writer.close();
                } catch (IOException ex) {
-                   Logger.getLogger(@(BaseClassName)Entity.class.getName()).log(Level.SEVERE, null, ex);
+                   Logger.getLogger(@(EntityClassName).class.getName()).log(Level.SEVERE, null, ex);
                }        
             }
             return null;
@@ -257,7 +260,7 @@ public class @(BaseClassName)Reader implements DataReader<@(TargetRowType), @(Le
         }
     }
 
-    private void writeToFile(@(BaseClassName)Entity entity){
+    private void writeToFile(@(EntityClassName) entity){
         try {
             if (writer == null) {
                 writer = new BufferedWriter(new FileWriter(target));
@@ -266,7 +269,7 @@ public class @(BaseClassName)Reader implements DataReader<@(TargetRowType), @(Le
             String line = lineParser.join(@linePattern);
             writer.write(line + "\n");
         } catch (IOException ex) {
-            Logger.getLogger(@(BaseClassName)Entity.class.getName()).log(Level.SEVERE, null, ex); @/ replace it with an AdpaterExcetion
+            Logger.getLogger(@(EntityClassName).class.getName()).log(Level.SEVERE, null, ex); @/ replace it with an AdpaterExcetion
         } 
     }
 

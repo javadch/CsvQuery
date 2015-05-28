@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.StringTokenizer;
 import java.util.stream.Collectors;
 import xqt.model.functions.AggregationCallInfo;
-import xqt.model.functions.FunctionImplementation;
 
 public class DataReaderBuilder extends DataReaderBuilderBase{
 
@@ -159,12 +158,7 @@ public class DataReaderBuilder extends DataReaderBuilderBase{
         readerContext.put("RightClassName", this.leftClassName); // in the single container it is not used by the reader, but shold be provided for compilation purposes.
         readerContext.put("AggregationCallInfos", this.aggregationCallInfo);
         // do not move these items to the base class
-        rowEntityContext.put("namespace", namespace);
-        rowEntityContext.put("BaseClassName", baseClassName + "Row");
-        rowEntityContext.put("Attributes", rowEntityAttributes.values().stream().collect(Collectors.toList()));        
-        if(hasAggregate()){
-           resultEntityContext.put("RowEntityType", baseClassName + "Row");
-        }
+        recordContext.put("Attributes", rowEntityAttributes.values().stream().collect(Collectors.toList()));   
     }
     
     @Override

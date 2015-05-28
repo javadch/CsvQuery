@@ -11,6 +11,9 @@
     String linePattern,
     String namespace,
     String BaseClassName,
+    String RecordClassName,
+    String EntityClassName,
+    String ReaderClassName,
     String LeftClassName,
     String RightClassName,
     String TargetRowType,
@@ -45,7 +48,7 @@ import xqt.model.functions.*;
 import xqt.model.functions.aggregates.*;
 import java.text.MessageFormat;
 
-public class @(BaseClassName)Reader implements DataReader<@(TargetRowType), @(LeftClassName), @(RightClassName)> {
+public class @(ReaderClassName) implements DataReader<@(TargetRowType), @(LeftClassName), @(RightClassName)> {
 
     BufferedReader reader;
     BufferedWriter writer;
@@ -130,7 +133,7 @@ public class @(BaseClassName)Reader implements DataReader<@(TargetRowType), @(Le
             reader.lines()
                 .filter(p -> !p.trim().startsWith(commentIndicator))
                 .map(p -> lineParser.split(p))
-                .map(p -> new @(BaseClassName)RowEntity(p))
+                .map(p -> new @(RecordClassName) (p))
             @if(Where!= null && !Where.isEmpty()) {
                 .filter(p -> (p.isValid == true) && (@Where))
             }
@@ -202,14 +205,14 @@ public class @(BaseClassName)Reader implements DataReader<@(TargetRowType), @(Le
     }
 
     @/ keys are partitioning the resultsets to single entries, so that there is one result row per key and aggregate functions should work and update those rows
-    private String getKey(@(BaseClassName)RowEntity rowEntity){
+    private String getKey(@(RecordClassName) rowEntity){
         String key = "1"; @/ there is only one group, which means the query contains some aggregate functions but not grouping
         @if(GroupBy!= null && GroupBy.size() > 0) {
             // in the group by
             @for(AttributeInfo ad : GroupBy) {
-                // in the loop
+                @/ in the loop
                 key = MessageFormat.format("{0}{1}", key, rowEntity.@(ad.name));
-                //key = key + rowEntity.@(ad.name).toString(); // adds the values of the entity attribute, as determined by the group by, to the key
+                @/key = key + rowEntity.@(ad.name).toString(); // adds the values of the entity attribute, as determined by the group by, to the key
             }
         } 
         return key;
@@ -218,7 +221,7 @@ public class @(BaseClassName)Reader implements DataReader<@(TargetRowType), @(Le
     Map<String, @(TargetRowType)> resultset = new HashMap<>();
     @/ if there is a result row associted to the key, it will be returned, otherwise a result item is created and added to the resultset
     @*
-    private @(TargetRowType) getResultEntity(@(BaseClassName)RowEntity rowEntity){
+    private @(TargetRowType) getResultEntity(@(RecordClassName) rowEntity){
         String key = getKey(rowEntity);
         @(TargetRowType) resultRow;
         if(resultset.containsKey(key)){
@@ -258,8 +261,8 @@ public class @(BaseClassName)Reader implements DataReader<@(TargetRowType), @(Le
         }
     }
 
-    //private void updateRrsultRow(@(TargetRowType) resultRow, @(BaseClassName)RowEntity rowEntity, String key){
-    private @(TargetRowType) updateRrsultRow(@(BaseClassName)RowEntity rowEntity){
+    @/ private void updateRrsultRow(@(TargetRowType) resultRow, @(RecordClassName) rowEntity, String key){
+    private @(TargetRowType) updateRrsultRow(@(RecordClassName) rowEntity){
         String key = getKey(rowEntity);
         @(TargetRowType) resultRow;
         if(resultset.containsKey(key)){
