@@ -7,9 +7,11 @@
 package com.vaiona.csv.reader;
 
 import com.vaiona.commons.data.FieldInfo;
+import com.vaiona.commons.logging.LoggerHelper;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.LinkedHashMap;
 import java.util.Scanner;
 
@@ -20,6 +22,7 @@ import java.util.Scanner;
 public class HeaderBuilder {
     // pother types of header builders should also be available. like the one that inferrs the field type from its usage in the attributes
     public LinkedHashMap<String, FieldInfo> buildFromDataFile(String fileName, String delimiter, String typeDelimiter, String unitDelimiter) throws IOException {
+        LoggerHelper.logDebug(MessageFormat.format("The CSV adapter is extracting the fields from file: {0} ", fileName));        
         LinkedHashMap<String, FieldInfo> fields;
         try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
             fields = this.buildFromDataFile(reader, delimiter, typeDelimiter, unitDelimiter);
