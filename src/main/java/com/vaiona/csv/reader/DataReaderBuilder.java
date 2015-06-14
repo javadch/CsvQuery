@@ -19,13 +19,6 @@ public class DataReaderBuilder extends DataReaderBuilderBase{
     String rightColumnDelimiter = ",";
     String typeDlimiter = ":";
     String unitDlimiter = "::";
-    String sourceOfData = "container";
-
-    public String getSourceOfData(){ return columnDelimiter;}
-    public DataReaderBuilder sourceOfData(String value){
-        this.sourceOfData = value;
-        return this;
-    }
 
     public String getColumnDelimiter(){ return columnDelimiter;}
     public DataReaderBuilder columnDelimiter(String value){
@@ -84,8 +77,7 @@ public class DataReaderBuilder extends DataReaderBuilderBase{
     @Override
     protected String translate(AttributeInfo attribute, boolean rightSide) {
         String translated = "";
-        for (StringTokenizer stringTokenizer = new StringTokenizer(attribute.forwardMap, " ");
-                stringTokenizer.hasMoreTokens();) {
+        for (StringTokenizer stringTokenizer = new StringTokenizer(attribute.forwardMap, " "); stringTokenizer.hasMoreTokens();) {
             String token = stringTokenizer.nextToken();
             boolean found = false;
             String properCaseToken = token;
@@ -158,7 +150,7 @@ public class DataReaderBuilder extends DataReaderBuilderBase{
         readerContext.put("RightClassName", this.leftClassName); // in the single container it is not used by the reader, but shold be provided for compilation purposes.
         readerContext.put("AggregationCallInfos", this.aggregationCallInfo);
         // do not move these items to the base class
-        recordContext.put("Attributes", rowEntityAttributes.values().stream().collect(Collectors.toList()));   
+        recordContext.put("Attributes", rowEntityAttributes.values().stream().collect(Collectors.toList()));           
     }
     
     @Override
