@@ -25,11 +25,7 @@ package @(namespace);
 
 import @(namespace).*;
 import com.vaiona.commons.data.*;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.*;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -112,7 +108,7 @@ public class @(ReaderClassName) implements DataReader<@(TargetRowType), @(LeftCl
         lineParser.setTrimTokens(trimTokens);
 
         @if(sourceOfData.equalsIgnoreCase("container")){
-            reader = new BufferedReader(new FileReader(source));
+            reader = new BufferedReader(new FileReader(new File(source)));
             if(this.bypassFirstRow){
                     reader.readLine();
             }           
@@ -120,7 +116,7 @@ public class @(ReaderClassName) implements DataReader<@(TargetRowType), @(LeftCl
                 List<@(EntityClassName)> result = 
             } else {
                 @/ create the file and make it empty. when there is no record to write to the output file, the file should be reset 
-                writer = new BufferedWriter(new FileWriter(target));
+                writer = new BufferedWriter(new FileWriter(new File(target)));
                 writer.write("@rowHeader" + "\n");
                 long result =
             }
@@ -180,7 +176,7 @@ public class @(ReaderClassName) implements DataReader<@(TargetRowType), @(LeftCl
             } else {
                 @/ create the file and make it empty. when there is no record to write to the output file, the file should be reset 
                 @/ Logger.getLogger(this.getClass().getName()).info("Target file name is:" + target + ".\n");
-                writer = new BufferedWriter(new FileWriter(target));
+                writer = new BufferedWriter(new FileWriter(new File(target)));
                 writer.write("@rowHeader" + "\n");
                 @/ Logger.getLogger(this.getClass().getName()).info("Writer is opened.\n");
                 long result = 0;
@@ -236,7 +232,7 @@ public class @(ReaderClassName) implements DataReader<@(TargetRowType), @(LeftCl
         {
         try {
             if (writer == null) {
-                writer = new BufferedWriter(new FileWriter(target));
+                writer = new BufferedWriter(new FileWriter(new File(target)));
                 writer.write("@rowHeader" + "\n");
             }
             String line = lineParser.join(@linePattern);
