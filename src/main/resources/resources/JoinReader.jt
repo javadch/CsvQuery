@@ -29,13 +29,7 @@ package @(namespace);
 
 import @(namespace).*;
 import com.vaiona.commons.data.*;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileNotFoundException;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.*;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -127,7 +121,7 @@ public class @(ReaderClassName) implements DataReader<@(TargetRowType), @(LeftCl
         lineParser.setTrimTokens(trimTokens);
 
         long skipped =0, taken =0;
-        leftReader = new BufferedReader(new FileReader(source));
+        leftReader = new BufferedReader(new FileReader(new File(source)));
         FileInputStream rightInputStream = new FileInputStream(sourceRight);
 
         if(this.bypassFirstRow){
@@ -263,7 +257,7 @@ public class @(ReaderClassName) implements DataReader<@(TargetRowType), @(LeftCl
     private void writeToFile(@(EntityClassName) entity){
         try {
             if (writer == null) {
-                writer = new BufferedWriter(new FileWriter(target));
+                writer = new BufferedWriter(new FileWriter(new File(target)));
                 writer.write("@rowHeader" + "\n");
             }
             String line = lineParser.join(@linePattern);
