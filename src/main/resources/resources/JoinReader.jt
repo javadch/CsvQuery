@@ -154,7 +154,11 @@ public class @(ReaderClassName) implements DataReader<@(TargetRowType), @(LeftCl
                     if(!rowEntity.isValid) continue; // filter rows with wrong keys
                     @/ check the join type here
                     @if(joinType.equalsIgnoreCase("InnerJoin")){
-                        if(!(rowEntity.@(leftJoinKey) @joinOperator rowEntity.@(rightJoinKey))) @/ Negate of the JOIN operator here!
+                        @if(joinOperator.equalsIgnoreCase("!equals")){ // speciall check for NOT EQUALS on strings!
+                            if(((rowEntity.@(leftJoinKey)) .equals (rowEntity.@(rightJoinKey)))) @/ Negate of the JOIN operator here!
+                        } else {
+                            if(!((rowEntity.@(leftJoinKey)) @joinOperator (rowEntity.@(rightJoinKey)))) @/ Negate of the JOIN operator here!
+                        }
                             continue; 
                         @if(Mid != null && Mid.size() > 0){
                             rowEntity.midPopulate(); // populate attributes required by the where clause.
@@ -189,10 +193,13 @@ public class @(ReaderClassName) implements DataReader<@(TargetRowType), @(LeftCl
                         @if(skip > -1 && (Ordering == null || Ordering.size() <= 0)){ // if no ordering is imposed and limit.skip is present
                             if(skipped++ < @(skip)) continue;
                         }
-                        if(rowEntity.@(leftJoinKey) @joinOperator rowEntity.@(rightJoinKey)) // JOIN Operator here!!
-                            rowEntity.populate();
-                        else
-                            rowEntity.populateLeft();
+                        @if(joinOperator.equalsIgnoreCase("!equals")){ // speciall check for NOT EQUALS on strings!
+                            if(!((rowEntity.@(leftJoinKey)) .equals (rowEntity.@(rightJoinKey)))) @/ JOIN operator here!
+                                rowEntity.populate();
+                        } else {
+                            if(((rowEntity.@(leftJoinKey)) @joinOperator (rowEntity.@(rightJoinKey)))) @/ JOIN operator here!
+                                rowEntity.populateLeft();
+                        }
                         resultset.add(rowEntity);
                         @if(take > -1 && (Ordering == null || Ordering.size() <= 0)){
                             if(taken++ >= @(take)) break;
@@ -212,10 +219,13 @@ public class @(ReaderClassName) implements DataReader<@(TargetRowType), @(LeftCl
                         @if(skip > -1 && (Ordering == null || Ordering.size() <= 0)){ // if no ordering is imposed and limit.skip is present
                             if(skipped++ < @(skip)) continue;
                         }
-                        if(rowEntity.@(leftJoinKey) @joinOperator rowEntity.@(rightJoinKey)) // JOIN Operator here!!
-                            rowEntity.populate();
-                        else
-                            rowEntity.populateRight();
+                        @if(joinOperator.equalsIgnoreCase("!equals")){ // speciall check for NOT EQUALS on strings!
+                            if(!((rowEntity.@(leftJoinKey)) .equals (rowEntity.@(rightJoinKey)))) @/ JOIN operator here!
+                                rowEntity.populate();
+                        } else {
+                            if(((rowEntity.@(leftJoinKey)) @joinOperator (rowEntity.@(rightJoinKey)))) @/ JOIN operator here!
+                                rowEntity.populateRight();
+                        }
                         resultset.add(rowEntity);
                         @if(take > -1 && (Ordering == null || Ordering.size() <= 0)){
                             if(taken++ >= @(take)) break;

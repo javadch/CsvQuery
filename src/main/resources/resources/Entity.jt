@@ -56,7 +56,8 @@ public class @(EntityClassName) {
         }
         if(isValid){
             this.row = row;
-        }       
+        }
+        //JTag.probe(this);   
     }
 
     @if(Mid != null && Mid.size() > 0){ 
@@ -88,7 +89,7 @@ public class @(EntityClassName) {
                 }
             }
             row = null;
-            //JTag.probe(this);
+            JTag.probe(this);
             return this;
         }
     } else { // aggregate functions are present. populate based on the row entity.
