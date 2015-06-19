@@ -39,6 +39,7 @@ public class HeaderBuilder {
         int indexCount = 0;
         while(scanner.hasNext()){
             FieldInfo field = new FieldInfo();
+            field.internalDataType = "String";
             field.index = indexCount;
             String temp = scanner.next().trim().replace("\"", "");
             if(temp.contains(typeDelimiter)){

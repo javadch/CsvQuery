@@ -22,6 +22,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import xqt.model.functions.*;
 import xqt.model.functions.aggregates.*;
+import com.vaiona.commons.logging.*;
 
 public class @(EntityClassName) {
 
@@ -82,10 +83,12 @@ public class @(EntityClassName) {
                         @ad.name = @ad.forwardMapTranslated;
                     }
                 } catch (Exception ex) {
+                    //LoggerHelper.logDebug(ex.getMessage());
                     isValid = false;
                 }
             }
             row = null;
+            //JTag.probe(this);
             return this;
         }
     } else { // aggregate functions are present. populate based on on row entity.

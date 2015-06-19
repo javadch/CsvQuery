@@ -24,6 +24,7 @@
 package @(namespace);
 
 import @(namespace).*;
+import com.vaiona.commons.logging.*;
 import com.vaiona.commons.data.*;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
