@@ -193,13 +193,17 @@ public class @(ReaderClassName) implements DataReader<@(TargetRowType), @(LeftCl
                         @if(skip > -1 && (Ordering == null || Ordering.size() <= 0)){ // if no ordering is imposed and limit.skip is present
                             if(skipped++ < @(skip)) continue;
                         }
-                        @if(joinOperator.equalsIgnoreCase("!equals")){ // speciall check for NOT EQUALS on strings!
+                        @if(joinOperator.equalsIgnoreCase("!equals")){ // special check for NOT EQUALS on strings!
                             if(!((rowEntity.@(leftJoinKey)) .equals (rowEntity.@(rightJoinKey)))) @/ JOIN operator here!
                                 rowEntity.populate();
+                            else
+                                rowEntity.populateLeft();
                         } else {
                             if(((rowEntity.@(leftJoinKey)) @joinOperator (rowEntity.@(rightJoinKey)))) @/ JOIN operator here!
+                                rowEntity.populate();
+                            else
                                 rowEntity.populateLeft();
-                        }
+                        }	
                         resultset.add(rowEntity);
                         @if(take > -1 && (Ordering == null || Ordering.size() <= 0)){
                             if(taken++ >= @(take)) break;
@@ -219,13 +223,17 @@ public class @(ReaderClassName) implements DataReader<@(TargetRowType), @(LeftCl
                         @if(skip > -1 && (Ordering == null || Ordering.size() <= 0)){ // if no ordering is imposed and limit.skip is present
                             if(skipped++ < @(skip)) continue;
                         }
-                        @if(joinOperator.equalsIgnoreCase("!equals")){ // speciall check for NOT EQUALS on strings!
+                        @if(joinOperator.equalsIgnoreCase("!equals")){ // special check for NOT EQUALS on strings!
                             if(!((rowEntity.@(leftJoinKey)) .equals (rowEntity.@(rightJoinKey)))) @/ JOIN operator here!
                                 rowEntity.populate();
+                            else
+                                rowEntity.populateRight();                        
                         } else {
                             if(((rowEntity.@(leftJoinKey)) @joinOperator (rowEntity.@(rightJoinKey)))) @/ JOIN operator here!
-                                rowEntity.populateRight();
-                        }
+                                rowEntity.populate();
+                            else
+                                rowEntity.populateRight();                        
+                        }	
                         resultset.add(rowEntity);
                         @if(take > -1 && (Ordering == null || Ordering.size() <= 0)){
                             if(taken++ >= @(take)) break;
