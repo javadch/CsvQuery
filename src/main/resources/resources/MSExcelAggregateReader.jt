@@ -22,7 +22,8 @@
     List<xqt.model.functions.AggregationCallInfo> AggregationCallInfos,
     Integer skip,
     Integer take,
-    String dialect
+    String dialect,
+    String ContainerName
 }
 
 package @(namespace);
@@ -44,9 +45,19 @@ import xqt.model.functions.*;
 import xqt.model.functions.aggregates.*;
 import java.text.MessageFormat;
 
+import com.vaiona.csv.reader.RowBuilder;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
 public class @(ReaderClassName) implements DataReader<@(TargetRowType), @(LeftClassName), @(RightClassName)> {
 
-    BufferedReader reader;
+    Stream<Row> reader;
     BufferedWriter writer;
 
     //Map<String, FieldInfo> headers = new LinkedHashMap<>();
@@ -116,20 +127,25 @@ public class @(ReaderClassName) implements DataReader<@(TargetRowType), @(LeftCl
         lineParser.setTrimTokens(trimTokens);
 
         @if(sourceOfData.equalsIgnoreCase("container")){
-            reader = new BufferedReader(new FileReader(new File(source)));
+            XSSFWorkbook workbook = new XSSFWorkbook(new FileInputStream(new File(source)));
+            XSSFSheet sheet = workbook.getSheet("@(ContainerName)"); //getSheetAt(0);//getSheet("Sheet1");
+            reader = StreamSupport.stream(
+                    Spliterators.spliterator(sheet.iterator(), sheet.getPhysicalNumberOfRows(),Spliterator.ORDERED),false);
+            FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
             if(this.bypassFirstRow){
-                    reader.readLine();
-            }     
+                    reader = reader.skip(1);
+            }    
             long result =
             @if(writeResultsToFile){
                 @/ create the file and make it empty. when there is no record to write to the output file, the file should be reset 
                 writer = new BufferedWriter(new FileWriter(new File(target)));
                 writer.write("@rowHeader" + "\n");
             }
-            reader.lines()
-                .filter(p -> !p.trim().startsWith(commentIndicator))
-                .map(p -> lineParser.split(p))
-                .map(p -> new @(RecordClassName) (p))
+            reader
+                .filter(row -> (!row.getZeroHeight()))
+                .map(row -> RowBuilder.createRowArray(row, evaluator))
+                .map(rowArray -> new @(RecordClassName)(rowArray))
+                //.peek(p-> {System.out.println("Excel row is read!");})
             @if(Where!= null && !Where.isEmpty()) {
                 .filter(p -> (p.isValid == true) && (@Where))
             }
@@ -260,6 +276,7 @@ public class @(ReaderClassName) implements DataReader<@(TargetRowType), @(LeftCl
                     aggregatesForKey.put("@(callInfo.getAliasName())", agg@(counter++));
                 }
             }
+
             runningAggregates.put(key, aggregatesForKey);
         }
     }

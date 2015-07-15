@@ -1,10 +1,8 @@
-@import com.vaiona.csv.reader.*
+    @import com.vaiona.csv.reader.*
 @import com.vaiona.commons.data.*
 @import com.vaiona.commons.types.*;
-@import xqt.model.functions.*;
 
 @args() {
-    List<AttributeInfo> GroupBy,
     String sourceOfData,
     boolean writeResultsToFile,
     String rowHeader,
@@ -19,34 +17,40 @@
     String TargetRowType,
     String Where,
     Map<AttributeInfo, String> Ordering,
-    List<xqt.model.functions.AggregationCallInfo> AggregationCallInfos,
     Integer skip,
     Integer take,
-    String dialect
+    String ContainerName
 }
 
 package @(namespace);
 
 import @(namespace).*;
+import com.vaiona.commons.logging.*;
 import com.vaiona.commons.data.*;
 import java.io.*;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import xqt.model.functions.*;
-import xqt.model.functions.aggregates.*;
-import java.text.MessageFormat;
+
+import com.vaiona.csv.reader.RowBuilder;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 public class @(ReaderClassName) implements DataReader<@(TargetRowType), @(LeftClassName), @(RightClassName)> {
 
-    BufferedReader reader;
+    Stream<Row> reader;
     BufferedWriter writer;
 
     //Map<String, FieldInfo> headers = new LinkedHashMap<>();
@@ -116,20 +120,27 @@ public class @(ReaderClassName) implements DataReader<@(TargetRowType), @(LeftCl
         lineParser.setTrimTokens(trimTokens);
 
         @if(sourceOfData.equalsIgnoreCase("container")){
-            reader = new BufferedReader(new FileReader(new File(source)));
+            XSSFWorkbook workbook = new XSSFWorkbook(new FileInputStream(new File(source)));
+            XSSFSheet sheet = workbook.getSheet("@(ContainerName)"); //getSheetAt(0);//getSheet("Sheet1");
+            reader = StreamSupport.stream(
+                    Spliterators.spliterator(sheet.iterator(), sheet.getPhysicalNumberOfRows(),Spliterator.ORDERED),false);
+            FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
             if(this.bypassFirstRow){
-                    reader.readLine();
-            }     
-            long result =
-            @if(writeResultsToFile){
+                    reader = reader.skip(1);
+            }           
+            @if(!writeResultsToFile){
+                List<@(EntityClassName)> result = 
+            } else {
                 @/ create the file and make it empty. when there is no record to write to the output file, the file should be reset 
                 writer = new BufferedWriter(new FileWriter(new File(target)));
                 writer.write("@rowHeader" + "\n");
+                long result =
             }
-            reader.lines()
-                .filter(p -> !p.trim().startsWith(commentIndicator))
-                .map(p -> lineParser.split(p))
-                .map(p -> new @(RecordClassName) (p))
+            reader
+                .filter(row -> (!row.getZeroHeight()))
+                .map(row -> RowBuilder.createRowArray(row, evaluator))
+                .map(rowArray -> new @(EntityClassName)(rowArray))
+                //.peek(p-> {System.out.println("Excel row is read!");})
             @if(Where!= null && !Where.isEmpty()) {
                 .filter(p -> (p.isValid == true) && (@Where))
             }
@@ -137,36 +148,34 @@ public class @(ReaderClassName) implements DataReader<@(TargetRowType), @(LeftCl
                 .filter(p -> (p.isValid == true) )
             }
             @//.parallel()
-            .map(p->p.populate())
-            .map(p-> updateResultRow(p))
-            .count(); // get the pipe process the input
-            @if(!writeResultsToFile){
-                return (
-                    resultset.values().stream()
-                    @if(Ordering!= null && Ordering.size() > 0) {
-                        .sorted(sorter)
-                    }
-                    @if(skip > -1){
-                        .skip(@(skip))
-                    }
-                    @if(take > -1){
-                        .limit(@(take))
-                    }  
-                    .collect(Collectors.toList())
-                );
-            } else {
-                resultset.values().stream()
-                @if(Ordering!= null && Ordering.size() > 0) {
-                    .sorted(sorter)
-                }
+            @if(Ordering!= null && Ordering.size() > 0) { // if order is present, populate and then sort
+                .map(p->p.populate())
+                .filter(p->p.isValid)
+                .sorted(sorter)
                 @if(skip > -1){
                     .skip(@(skip))
                 }
                 @if(take > -1){
                     .limit(@(take))
-                }  
+                }
+            } else { @/ if there no ordering, there no need for early post-population, its better to skip/ take and then post-populate
+                @if(skip > -1){
+                    .skip(@(skip))
+                }
+                @if(take > -1){
+                    .limit(@(take))
+                }
+                .map(p->p.populate())
+                .filter(p->p.isValid)                
+            }
+            @if(writeResultsToFile){
                 .peek(p-> writeToFile(p))
-                .count(); // it is just to make the stream to be consumed
+                .count() // it is just to make the stream to be consumed
+            } else {
+                .collect(Collectors.toList())
+            }
+            ;
+            @if(writeResultsToFile){
                 if (writer != null){
                    try {
                        writer.flush();
@@ -177,106 +186,76 @@ public class @(ReaderClassName) implements DataReader<@(TargetRowType), @(LeftCl
                 }
                 @/ Logger.getLogger(this.getClass().getName()).info("Number of retrieved records:" + result + ".\n");
                 return null;
-            }            
+            } else {return result;}
+        } else if (sourceOfData.equalsIgnoreCase("variable")) {
+            @if(!writeResultsToFile){
+                List<@(EntityClassName)> result = null;
+            } else {
+                @/ create the file and make it empty. when there is no record to write to the output file, the file should be reset 
+                @/ Logger.getLogger(this.getClass().getName()).info("Target file name is:" + target + ".\n");
+                writer = new BufferedWriter(new FileWriter(new File(target)));
+                writer.write("@rowHeader" + "\n");
+                @/ Logger.getLogger(this.getClass().getName()).info("Writer is opened.\n");
+                long result = 0;
+            }
+            if(source1 != null) {
+                result = source1.stream()
+                    @if(Where!= null && !Where.isEmpty()) {
+                        .filter(p -> (p.isValid == true) && (@Where))
+                    }
+                    else{
+                        .filter(p -> (p.isValid == true) )
+                    }
+                    @if(Ordering!= null && Ordering.size() > 0) {
+                       .sorted(sorter)
+                    }
+                    @if(skip > -1){
+                        .skip(@(skip))
+                    }
+                    @if(take > -1){
+                        .limit(@(take))
+                    }
+                @if(writeResultsToFile){
+                    .peek(p-> writeToFile(p))
+                    .count() // it is just to make the stream to be consumed
+                } else {
+                    .collect(Collectors.toList())
+                }
+                ;
+            }
+            @if(writeResultsToFile){
+                if (writer != null){
+                   try {
+                       writer.flush();
+                       writer.close();
+                       @/ Logger.getLogger(this.getClass().getName()).info("Writer is closed.\n");
+                   } catch (IOException ex) {
+                       Logger.getLogger(TestReader.class.getName()).log(Level.SEVERE, null, ex);
+                   }        
+                }
+                @/ Logger.getLogger(this.getClass().getName()).info("Number of retrieved records:" + result + ".\n");
+                return null;
+            } else {return result;}
         }
     }
 
-    @if(sourceOfData.equalsIgnoreCase("variable")) {
-        private void writeToFile(@(TargetRowType) entity)
+    @if (sourceOfData.equalsIgnoreCase("variable")) {
+        private void writeToFile(@(EntityClassName) entity)
     } else {
-        private void writeToFile(@(TargetRowType) entity)
+        private void writeToFile(@(EntityClassName) entity)
     }
         {
-            try {
-                if (writer == null) {
-                    writer = new BufferedWriter(new FileWriter(new File(target)));
-                    writer.write("@rowHeader" + "\n");
-                }
-                String line = lineParser.join(@linePattern);
-                writer.write(line + "\n");
-                @/ Logger.getLogger(this.getClass().getName()).info("A row is written to the file.\n");
-            } catch (IOException ex) {
-                Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex); @/ change it with an AdpaterExcetion
-            } 
-        }
-
-    @/ keys are partitioning the resultsets to single entries, so that there is one result row per key and aggregate functions should work and update those rows
-    private String getKey(@(RecordClassName) rowEntity){
-        String key = "1"; @/ there is only one group, which means the query contains some aggregate functions but not grouping
-        @if(GroupBy!= null && GroupBy.size() > 0) {
-            // in the group by
-            @for(AttributeInfo ad : GroupBy) {
-                @/ in the loop
-                key = MessageFormat.format("{0}{1}", key, rowEntity.@(ad.name));
-                @/key = key + rowEntity.@(ad.name).toString(); // adds the values of the entity attribute, as determined by the group by, to the key
+        try {
+            if (writer == null) {
+                writer = new BufferedWriter(new FileWriter(new File(target)));
+                writer.write("@rowHeader" + "\n");
             }
+            String line = lineParser.join(@linePattern);
+            writer.write(line + "\n");
+            @/ Logger.getLogger(this.getClass().getName()).info("A row is written to the file.\n");
+        } catch (IOException ex) {
+            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex); @/ change it with an AdpaterExcetion
         } 
-        return key;
-    }
-
-    Map<String, @(TargetRowType)> resultset = new HashMap<>();
-    @/ if there is a result row associted to the key, it will be returned, otherwise a result item is created and added to the resultset
-    @*
-    private @(TargetRowType) getResultEntity(@(RecordClassName) rowEntity){
-        String key = getKey(rowEntity);
-        @(TargetRowType) resultRow;
-        if(resultset.containsKey(key)){
-            resultRow = resultset.get(key);
-        } else {
-            resultRow = new @(TargetRowType)();
-            resultset.put(key, resultRow);
-            createRunningAggregates(key);
-        }
-        updateResultRow(resultRow, rowEntity, key);
-    }
-    *@
-    Map<String, Map<String, AggregateFunction>> runningAggregates = new HashMap<>(); @/ key, aggregate function name as in the result row attribute, the actual aggregate function as in the function specification
-
-    @/ create a list of aggregate functions as requested by the aggregate function references of the query, one instance per group
-    private void createRunningAggregates(String key){
-        if(!runningAggregates.containsKey(key)){
-            Map<String, AggregateFunction> aggregatesForKey = new HashMap<>();
-            @/ create a new agg. map for the key
-            @{int counter =0;}
-            @for(AggregationCallInfo callInfo : AggregationCallInfos) {
-                @/ consider loading the jar library!
-                @{
-                    FunctionImplementation fImp = null;
-                    for(FunctionImplementation fm : callInfo.getFunction().getFunctionSpecification().getImplementations()){
-                        if(fm.getDialect().equalsIgnoreCase(dialect)){
-                            fImp = fm;
-                        }
-                    }
-                    if(fImp == null){ // dialect specific implementation does not exist, try the default one                    
-                        for(FunctionImplementation fm : callInfo.getFunction().getFunctionSpecification().getImplementations()){
-                            if(fm.getDialect().equalsIgnoreCase("default")){
-                                fImp = fm;
-                            }
-                        }
-                    }
-                }
-                @if(fImp != null) {// OK
-                    AggregateFunction agg@(counter) = new @(fImp.getNamespace()).@(fImp.getClassName())();
-                    aggregatesForKey.put("@(callInfo.getAliasName())", agg@(counter++));
-                }
-            }
-            runningAggregates.put(key, aggregatesForKey);
-        }
-    }
-
-    @/ private void updateResultRow(@(TargetRowType) resultRow, @(RecordClassName) rowEntity, String key){
-    private @(TargetRowType) updateResultRow(@(RecordClassName) rowEntity){
-        String key = getKey(rowEntity);
-        @(TargetRowType) resultRow;
-        if(resultset.containsKey(key)){
-            resultRow = resultset.get(key);
-        } else {
-            resultRow = new @(TargetRowType)();
-            resultset.put(key, resultRow);
-            createRunningAggregates(key);
-        }
-        resultRow.populate(rowEntity, runningAggregates.get(key));
-        return resultRow;
     }
 
     @@Override

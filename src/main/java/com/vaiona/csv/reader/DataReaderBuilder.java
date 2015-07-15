@@ -19,6 +19,21 @@ public class DataReaderBuilder extends DataReaderBuilderBase{
     String rightColumnDelimiter = ",";
     String typeDlimiter = ":";
     String unitDlimiter = "::";
+    String containerName = "";
+    String rightContainerName = "";
+
+    
+    public String getContainerName(){ return containerName;}
+    public DataReaderBuilder containerName(String value){
+        this.containerName = value;
+        return this;
+    }
+
+    public String getRightContainerName(){ return rightContainerName;}
+    public DataReaderBuilder rightContainerName(String value){
+        this.rightContainerName = value;
+        return this;
+    }
 
     public String getColumnDelimiter(){ return columnDelimiter;}
     public DataReaderBuilder columnDelimiter(String value){
@@ -161,6 +176,7 @@ public class DataReaderBuilder extends DataReaderBuilderBase{
             readerContext.put("LeftClassName", "Object"); // used as both left and right sides' type.
             readerContext.put("RightClassName", "Object"); // in the single container it is not used by the reader, but shold be provided for compilation purposes.
             readerContext.put("TargetRowType", otherCalssNames);
+            readerContext.put("ContainerName", this.containerName);            
         } else if (sourceOfData.equalsIgnoreCase("variable")){
             readerContext.put("LeftClassName", this.leftClassName); // used as both left and right sides' type.
             readerContext.put("RightClassName", this.leftClassName); // in the single container it is not used by the reader, but shold be provided for compilation purposes.
@@ -187,144 +203,9 @@ public class DataReaderBuilder extends DataReaderBuilderBase{
         readerContext.put("LeftClassName", "Object"); 
         readerContext.put("RightClassName", "Object");
         readerContext.put("TargetRowType", (namespace + "." + baseClassName + "Entity"));
+        readerContext.put("ContainerName", this.containerName);            
+        readerContext.put("RightContainerName", this.rightContainerName);            
+        readerContext.put("LeftFieldsNo", this.fields.size());                    
     }
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-//    public LinkedHashMap<String, InMemorySourceFile> createSources()  {
-//        // check if the statement has no adapter, throw an exception
-//        
-//        if(baseClassName == null || baseClassName.isEmpty()){
-//            baseClassName = "C" + (new Date()).getTime();
-//        }
-//        attributes.entrySet().stream().map((entry) -> entry.getValue()).forEach((ad) -> {
-//            if(ad.joinSide.equalsIgnoreCase("R"))
-//                ad.forwardMapTranslated = translate(ad.forwardMap, ad.conceptualDataType, true);
-//            else
-//                ad.forwardMapTranslated = translate(ad.forwardMap, ad.conceptualDataType, false);
-//        });
-//        
-//        // transform the ordering clauses to their bound equivalent, in each attribute names are linked to the attibutes objects
-//        Map<AttributeInfo, String> orderItems = new LinkedHashMap<>();        
-//        for (Map.Entry<String, String> entry : ordering.entrySet()) {
-//                if(attributes.containsKey(entry.getKey())){
-//                    orderItems.put(attributes.get(entry.getKey()), entry.getValue());
-//                }            
-//        }
-//        
-//        ClassGenerator generator = new ClassGenerator();
-//        
-//        Map<String, Object> entityContext = new HashMap<>();
-//        entityContext.put("namespace", NAME_SPACE);
-//        entityContext.put("BaseClassName", baseClassName);
-//        entityContext.put("Attributes", attributes.values().stream().collect(Collectors.toList()));        
-//        
-//        Map<String, Object> readerContext = new HashMap<>();
-//        readerContext.put("Attributes", attributes.values().stream().collect(Collectors.toList()));
-//        // the output row header, when the reader, pushes the resultset to another file
-//        String header = String.join(columnDelimiter, attributes.values().stream().map(p-> p.name + ":" + p.internalDataType).collect(Collectors.toList()));
-//        readerContext.put("rowHeader", header);        
-//        String linePattern = String.join(",", attributes.values().stream().map(p-> "String.valueOf(entity." + p.name + ")").collect(Collectors.toList()));
-//        readerContext.put("linePattern", linePattern);        
-//        readerContext.put("namespace", NAME_SPACE);
-//        readerContext.put("BaseClassName", baseClassName);
-//        readerContext.put("Where", whereClauseTranslated);
-//        readerContext.put("Ordering", orderItems);
-//        readerContext.put("skip", skip);
-//        readerContext.put("take", take);
-//        readerContext.put("writeResultsToFile", writeResultsToFile);
-//        String entity = "";
-//        String reader = "";
-//        
-//        if(this.joinType.equalsIgnoreCase("")){ // Single Source
-//            // Pre list contains the attributes referenced from the where clause
-//            entityContext.put("Pre", referencedAttributes.values().stream().collect(Collectors.toList()));
-//            postAttributes = attributes.entrySet().stream()
-//                .filter((entry) -> (!referencedAttributes.containsKey(entry.getKey())))
-//                .collect(Collectors.toMap(p->p.getKey(), p->p.getValue()));
-//            // Single container does not the Mid attributes
-//            // Post list contains all the other attributes except those in the Pre
-//            entityContext.put("Post", postAttributes.values().stream().collect(Collectors.toList()));
-//            // Post_Left and Post_Right should be emtpy in single container cases.
-//            List<AttributeInfo> leftOuterItems = postAttributes.values().stream()
-//                    .filter(p-> p.joinSide.equalsIgnoreCase("L"))
-//                    .collect(Collectors.toList());
-//            leftOuterItems.addAll(orderItems.keySet().stream().filter(p-> !leftOuterItems.contains(p)).collect(Collectors.toList()));
-//            entityContext.put("Post_Left", leftOuterItems);
-//            
-//            List<AttributeInfo> rightOuterItems = postAttributes.values().stream()
-//                    .filter(p-> p.joinSide.equalsIgnoreCase("R"))
-//                    .collect(Collectors.toList());
-//            rightOuterItems.addAll(orderItems.keySet().stream().filter(p-> !rightOuterItems.contains(p)).collect(Collectors.toList()));
-//            entityContext.put("Post_Right", rightOuterItems);
-//            
-//            entity = generator.generate(this, "Entity", "Resource", entityContext);
-//            reader = generator.generate(this, "Reader", "Resource", readerContext);
-//        } else {
-//            // set pre to join keys, mid: where clause keys
-//            entityContext.put("joinType", this.joinType);
-//            joinKeyAttributes.put(leftJoinKey, attributes.get(leftJoinKey));
-//            joinKeyAttributes.put(rightJoinKey, attributes.get(rightJoinKey));
-//            // Pre list contains the attribtes used as join keys
-//            entityContext.put("Pre", joinKeyAttributes.values().stream().collect(Collectors.toList()));
-//            // Mid contains the attrbutes referenced from the where clause
-//            entityContext.put("Mid", referencedAttributes.values().stream().collect(Collectors.toList()));
-//            postAttributes = attributes.entrySet().stream()
-//                .filter((entry) -> (!referencedAttributes.containsKey(entry.getKey())))
-//                .filter((entry) -> (!joinKeyAttributes.containsKey(entry.getKey())))
-//                .collect(Collectors.toMap(p->p.getKey(), p->p.getValue()));
-//            // Post list contains all the attributes except those used as join key or in the where clause
-//            entityContext.put("Post", postAttributes.values().stream().collect(Collectors.toList()));
-//            // In case of outer join, if ordering (check also for frouping) is present, the ordering attributes should be unioned
-//            // with the post population attributes, so that the sort method on the data reader should hev proper values populaed into the entity
-//            List<AttributeInfo> leftOuterItems = postAttributes.values().stream()
-//                    .filter(p-> p.joinSide.equalsIgnoreCase("L")).collect(Collectors.toList());
-//            leftOuterItems.addAll(orderItems.keySet().stream().filter(p-> !leftOuterItems.contains(p)).collect(Collectors.toList()));
-//            entityContext.put("Post_Left", leftOuterItems);
-//            
-//            List<AttributeInfo> rightOuterItems = postAttributes.values().stream()
-//                    .filter(p-> p.joinSide.equalsIgnoreCase("R")).collect(Collectors.toList());
-//            rightOuterItems.addAll(orderItems.keySet().stream().filter(p-> !rightOuterItems.contains(p)).collect(Collectors.toList()));
-//            entityContext.put("Post_Right", rightOuterItems);            
-//
-//            readerContext.put("joinType", this.joinType);
-//            readerContext.put("joinOperator", this.joinOperator);            
-//            readerContext.put("leftJoinKey", this.leftJoinKey);
-//            readerContext.put("rightJoinKey", this.rightJoinKey);
-//            // Mid is passed to the reader in order to prevent calling midPopulate when not neccessary; the case when there is no WHERE clause.
-//            readerContext.put("Mid", referencedAttributes.values().stream().collect(Collectors.toList()));
-//            
-//            entity = generator.generate(this, "Entity", "Resource", entityContext);
-//            reader = generator.generate(this, "JoinReader", "Resource", readerContext);
-//        }
-//        LinkedHashMap<String, InMemorySourceFile> sources = new LinkedHashMap<>();
-//        InMemorySourceFile rf = new InMemorySourceFile(baseClassName + "Reader", reader);
-//        rf.setEntryPoint(true);
-//        rf.setFullName(NAME_SPACE + "." + baseClassName + "Reader");
-//        sources.put(rf.getFullName(), rf); // the reader must be added first
-//        
-//        InMemorySourceFile ef = new InMemorySourceFile(baseClassName + "Entity", entity);
-//        ef.setFullName(NAME_SPACE + "." + baseClassName + "Entity");
-//        sources.put(ef.getFullName(), ef); // the reader must be added first
-//        return sources;
-//    }
-
 
 }
