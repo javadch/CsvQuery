@@ -22,7 +22,11 @@
     String joinOperator,
     String leftJoinKey,
     String rightJoinKey,
-    List<AttributeInfo> Mid
+    List<AttributeInfo> Mid,
+    String ContainerName,
+    String RightContainerName,
+    Integer LeftFieldsNo,
+    Integer RightFieldsNo
 }
 
 package @(namespace);
@@ -121,35 +125,63 @@ public class @(ReaderClassName) implements DataReader<@(TargetRowType), @(LeftCl
         lineParser.setTrimTokens(trimTokens);
 
         long skipped =0, taken =0;
-        leftReader = new BufferedReader(new FileReader(new File(source)));
-        FileInputStream rightInputStream = new FileInputStream(sourceRight);
 
-        if(this.bypassFirstRow){
+        String outerSource = source;
+        String innerSource = sourceRight;
+        @if(joinType.equalsIgnoreCase("RightOuterJoin")){	
+            outerSource = sourceRight;
+            innerSource = source;
+            if(outerSource == null || outerSource.isEmpty()){
+                    outerSource = innerSource;
+            }
+        }
+        leftReader = new BufferedReader(new FileReader(new File(outerSource)));
+        FileInputStream rightInputStream = new FileInputStream(innerSource);
+
+        @if(joinType.equalsIgnoreCase("RightOuterJoin")){
+            if(this.bypassFirstRowRight){
                 leftReader.readLine();
-        }           
+            }
+        } else {
+            if(this.bypassFirstRow){
+                leftReader.readLine();
+            }
+        }
         /////////////////////////////////////////////////////////////////////
         List<@(EntityClassName)> resultset = new ArrayList<>();
         for(String[] left: leftReader.lines()
                 .filter(p -> !p.trim().startsWith(commentIndicator))
                 .map(p -> lineParser.split(p)).collect(Collectors.toList())                 
             ){
+            @(EntityClassName) nonMatching = null;
             @if(take > -1 && (Ordering == null || Ordering.size() <= 0)){
                 if(taken >= @(take)) break;
             }
             try{
                 rightInputStream.getChannel().position(0);
                 rightReader = new BufferedReader(new InputStreamReader(rightInputStream));
-                if (this.bypassFirstRowRight) {
-                    rightReader.readLine();
-                }
+                @if(joinType.equalsIgnoreCase("RightOuterJoin")){
+                    if(this.bypassFirstRow){
+                        rightReader.readLine();
+                    }
+                } else {
+                    if(this.bypassFirstRowRight){
+                        rightReader.readLine();
+                    }
+                }    
+                Boolean recordMatched = false;
                 for(String[] right: rightReader.lines()
                         .filter(p -> !p.trim().startsWith(commentIndicator))
                         .map(p -> lineParserRight.split(p)).collect(Collectors.toList()) 
                     ){
-                    String[] joinedRow = Arrays.copyOf(left, left.length + right.length);
-                    System.arraycopy(right, 0, joinedRow, left.length, right.length);
-
-                    @/ if you rename the rowEntity, then its reference in DataReaderBuilder.extractUsedAttributes method should also change.
+                    @if(joinType.equalsIgnoreCase("RightOuterJoin")){
+                        String[] joinedRow = Arrays.copyOf(right, left.length + right.length);
+                        System.arraycopy(left, 0, joinedRow, @(LeftFieldsNo), left.length); 
+                    } else {
+                        String[] joinedRow = Arrays.copyOf(left, left.length + right.length);
+                        System.arraycopy(right, 0, joinedRow, @(LeftFieldsNo), right.length); @/ it should use the number of actual fields as mentioned in the file header or perspective instead of the left.length
+                    }
+                        @/ if you rename the rowEntity, then its reference in DataReaderBuilder.extractUsedAttributes method should also change.
                     @(EntityClassName) rowEntity = new @(EntityClassName)(joinedRow); // PRE: populate the keys
                     if(!rowEntity.isValid) continue; // filter rows with wrong keys
                     @/ check the join type here
@@ -159,7 +191,7 @@ public class @(ReaderClassName) implements DataReader<@(TargetRowType), @(LeftCl
                         } else {
                             if(!((rowEntity.@(leftJoinKey)) @joinOperator (rowEntity.@(rightJoinKey)))) @/ Negate of the JOIN operator here!
                         }
-                            continue; 
+                            continue; @/ based on the join key comparison results, skip the row
                         @if(Mid != null && Mid.size() > 0){
                             rowEntity.midPopulate(); // populate attributes required by the where clause.
                         }
@@ -194,20 +226,26 @@ public class @(ReaderClassName) implements DataReader<@(TargetRowType), @(LeftCl
                             if(skipped++ < @(skip)) continue;
                         }
                         @if(joinOperator.equalsIgnoreCase("!equals")){ // special check for NOT EQUALS on strings!
-                            if(!((rowEntity.@(leftJoinKey)) .equals (rowEntity.@(rightJoinKey)))) @/ JOIN operator here!
+                            if(!((rowEntity.@(leftJoinKey)) .equals (rowEntity.@(rightJoinKey)))){ @/ JOIN operator here!
                                 rowEntity.populate();
-                            else
-                                rowEntity.populateLeft();
+                                resultset.add(rowEntity);
+                                //nonMatching = null;
+                                recordMatched = true; @/ when a join match is found, the non matching record are NOT added
+                                //break;
+                            } else if(nonMatching == null){ // no match found, hence, only the left side should get populated, and once. non matching rows are created once, no need to generate them for each inner loop
+				nonMatching = rowEntity.populateLeft();
+                            }
                         } else {
-                            if(((rowEntity.@(leftJoinKey)) @joinOperator (rowEntity.@(rightJoinKey)))) @/ JOIN operator here!
+                            if(((rowEntity.@(leftJoinKey)) @joinOperator (rowEntity.@(rightJoinKey)))){ @/ JOIN operator here!
                                 rowEntity.populate();
-                            else
-                                rowEntity.populateLeft();
+                                resultset.add(rowEntity);
+                                //nonMatching = null;
+                                recordMatched = true; @/ when a join match is found, the non matching record are NOT added
+                                //break;
+                            } else if(nonMatching == null){ // no match found, hence, only the left side should get populated, and once. non matching rows are created once, no need to generate them for each inner loop
+				nonMatching = rowEntity.populateLeft();
+                            }
                         }	
-                        resultset.add(rowEntity);
-                        @if(take > -1 && (Ordering == null || Ordering.size() <= 0)){
-                            if(taken++ >= @(take)) break;
-                        }
                     }
                     else if(joinType.equalsIgnoreCase("RightOuterJoin")){
                         @if(Mid != null && Mid.size() > 0){
@@ -224,21 +262,33 @@ public class @(ReaderClassName) implements DataReader<@(TargetRowType), @(LeftCl
                             if(skipped++ < @(skip)) continue;
                         }
                         @if(joinOperator.equalsIgnoreCase("!equals")){ // special check for NOT EQUALS on strings!
-                            if(!((rowEntity.@(leftJoinKey)) .equals (rowEntity.@(rightJoinKey)))) @/ JOIN operator here!
+                            if(!((rowEntity.@(leftJoinKey)) .equals (rowEntity.@(rightJoinKey)))){ @/ JOIN operator here!
                                 rowEntity.populate();
-                            else
-                                rowEntity.populateRight();                        
+                                resultset.add(rowEntity);
+                                //nonMatching = null;
+                                recordMatched = true; @/ when a join match is found, the non matching record are NOT added
+                                //break;
+                            } else if(nonMatching == null){ // no match found, hence, only the left side should get populated, and once. non matching rows are created once, no need to generate them for each inner loop
+				nonMatching = rowEntity.populateRight();
+                            }                                      
                         } else {
-                            if(((rowEntity.@(leftJoinKey)) @joinOperator (rowEntity.@(rightJoinKey)))) @/ JOIN operator here!
+                            if(((rowEntity.@(leftJoinKey)) @joinOperator (rowEntity.@(rightJoinKey)))){ @/ JOIN operator here!
                                 rowEntity.populate();
-                            else
-                                rowEntity.populateRight();                        
+                                resultset.add(rowEntity);
+                                //nonMatching = null;
+                                recordMatched = true; @/ when a join match is found, the non matching record are NOT added
+                                //break;
+                            }
+                            else if(nonMatching == null){ // no match found, hence, only the left side should get populated, and once. non matching rows are created once, no need to generate them for each inner loop
+				nonMatching = rowEntity.populateRight();
+                            }                        
                         }	
-                        resultset.add(rowEntity);
-                        @if(take > -1 && (Ordering == null || Ordering.size() <= 0)){
-                            if(taken++ >= @(take)) break;
-                        }
                     }
+                }
+		if(nonMatching != null && recordMatched == false)
+			resultset.add(nonMatching);
+                @if(take > -1 && (Ordering == null || Ordering.size() <= 0)){
+                    if(taken++ >= @(take)) break;
                 }
             } catch (IOException ex){
                 // throw a proper exception

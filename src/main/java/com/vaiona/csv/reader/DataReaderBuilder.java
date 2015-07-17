@@ -206,6 +206,7 @@ public class DataReaderBuilder extends DataReaderBuilderBase{
         readerContext.put("ContainerName", this.containerName);            
         readerContext.put("RightContainerName", this.rightContainerName);            
         readerContext.put("LeftFieldsNo", this.fields.size());                    
+        readerContext.put("RightFieldsNo", this.rightFields.size());                    
     }
 
 }

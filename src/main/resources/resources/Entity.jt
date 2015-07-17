@@ -88,8 +88,8 @@ public class @(EntityClassName) {
                     isValid = false;
                 }
             }
-            row = null;
             JTag.probe(this);
+            row = null;
             return this;
         }
     } else { // aggregate functions are present. populate based on the row entity.
@@ -107,6 +107,7 @@ public class @(EntityClassName) {
                     isValid = false;
                 }
             }
+            JTag.probe(this);
             row = null;
             return this;
         }
@@ -122,6 +123,7 @@ public class @(EntityClassName) {
                 isValid = false;
             }
         }
+        JTag.probe(this);
         row = null;
         return this;
     }
@@ -136,6 +138,7 @@ public class @(EntityClassName) {
                 isValid = false;
             }
         }
+        JTag.probe(this);
         row = null;
         return this;
     }
