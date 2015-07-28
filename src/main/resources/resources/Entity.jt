@@ -84,7 +84,7 @@ public class @(EntityClassName) {
                         @ad.name = @ad.forwardMapTranslated;
                     }
                 } catch (Exception ex) {
-                    //LoggerHelper.logDebug(ex.getMessage());
+                    LoggerHelper.logDebug("Object @(EntityClassName) failed to populate. Reason:" + ex.getMessage());
                     isValid = false;
                 }
             }
