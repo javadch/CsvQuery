@@ -72,9 +72,7 @@ public class DataReaderBuilder extends DataReaderBuilderBase{
     }
 
     
-    public DataReader build(Class classObject) throws IOException, ClassNotFoundException, NoSuchMethodException, 
-            InstantiationException, IllegalAccessException, IllegalArgumentException, 
-            InvocationTargetException {
+    public DataReader build(Class classObject)  {
        try{        
             DataReader<Object, Object, Object> instance = (DataReader<Object, Object, Object>)ObjectCreator.createInstance(classObject);    
             instance
