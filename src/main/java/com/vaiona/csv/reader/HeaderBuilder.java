@@ -27,8 +27,11 @@ public class HeaderBuilder {
         LinkedHashMap<String, FieldInfo> fields;
         try (BufferedReader reader = new BufferedReader(new FileReader(new File(fileName)))) {
             fields = this.buildFromDataFile(reader, delimiter, typeDelimiter, unitDelimiter);
+            return (fields);
+        } catch (Exception ex){
+            LoggerHelper.logError(MessageFormat.format("Schema generation error for adapter: \'CSV\'. {0}", ex.getMessage()));            
+            return new LinkedHashMap<>();
         }
-        return (fields);
     }
     
     public LinkedHashMap<String, FieldInfo> buildFromDataFile(BufferedReader reader, String delimiter, String typeDelimiter, String unitDelimiter) throws IOException {
@@ -39,31 +42,35 @@ public class HeaderBuilder {
         // header items can be one these formats: Name/ Name:Type/ Name:Type::Unit
         int indexCount = 0;
         while(scanner.hasNext()){
-            FieldInfo field = new FieldInfo();
-            field.internalDataType = "String";
+            FieldInfo field = convert(scanner.next(), typeDelimiter, unitDelimiter);
             field.index = indexCount;
-            String temp = scanner.next().trim().replace("\"", "");
-            if(temp.contains(typeDelimiter)){
-                if(temp.contains(unitDelimiter)){
-                    field.name = temp.substring(0, temp.indexOf(typeDelimiter));
-                    field.internalDataType = temp.substring(
-                            temp.indexOf(typeDelimiter)+typeDelimiter.length(), temp.indexOf(unitDelimiter));  
-                    field.unit = temp.substring(
-                            temp.indexOf(unitDelimiter)+unitDelimiter.length(), temp.length());
-                }
-                else{
-                    field.name = temp.substring(0, temp.indexOf(typeDelimiter));
-                    field.internalDataType = temp.substring(
-                            temp.indexOf(typeDelimiter)+typeDelimiter.length(), temp.length());                    
-                }
-            }
-            else{
-                field.name = temp;
-            }
             headers.put(field.name, field);
             indexCount++;
         }
         return (headers);
     }
     
+    public FieldInfo convert(String fieldInfoString, String typeDelimiter, String unitDelimiter){
+        FieldInfo field = new FieldInfo();
+        field.internalDataType = "String";
+        String temp = fieldInfoString.trim().replace("\"", "");
+        if(temp.contains(typeDelimiter)){
+            if(temp.contains(unitDelimiter)){
+                field.name = temp.substring(0, temp.indexOf(typeDelimiter));
+                field.internalDataType = temp.substring(
+                        temp.indexOf(typeDelimiter)+typeDelimiter.length(), temp.indexOf(unitDelimiter));  
+                field.unit = temp.substring(
+                        temp.indexOf(unitDelimiter)+unitDelimiter.length(), temp.length());
+            }
+            else{
+                field.name = temp.substring(0, temp.indexOf(typeDelimiter));
+                field.internalDataType = temp.substring(
+                        temp.indexOf(typeDelimiter)+typeDelimiter.length(), temp.length());                    
+            }
+        }
+        else{
+            field.name = temp;
+        }    
+        return field;
+    }
 }

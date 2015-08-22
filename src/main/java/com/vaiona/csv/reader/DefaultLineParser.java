@@ -23,7 +23,7 @@ public class DefaultLineParser implements LineParser{
         // mostly taken from http://agiletribe.wordpress.com/2012/11/23/the-only-class-you-need-for-csv-files/
         int index = 0;
         int ch = line.charAt(index);
-        while (ch == '\r') {
+        while (ch == '\r' || ch == '\n') {
             ch = line.charAt(++index);
         }
         if (ch<0) {
@@ -61,7 +61,7 @@ public class DefaultLineParser implements LineParser{
                     started = false;
                 }
                 else if (ch == '\r') {
-                    //ignore LF characters
+                    //ignore CR characters
                 }
                 else if (ch == '\n') {
                     //end of a line, break out
