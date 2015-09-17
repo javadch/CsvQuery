@@ -4,7 +4,7 @@
 // * and open the template in the editor.
 // */
 //
-//package com.vaiona.test;
+package com.vaiona.test;
 //
 //import com.vaiona.csv.reader.DataReader;
 //import com.vaiona.csv.reader.DataReaderBuilder;
@@ -15,7 +15,7 @@
 // *
 // * @author standard
 // */
-//public class SampleUsage {
+public class SampleUsage {
 //    private void read2() throws Exception {
 //        DataReaderBuilder builder = new DataReaderBuilder();
 //        
@@ -82,4 +82,4 @@
 //            throw new Exception(ex.getMessage(), ex);
 //        }
 //    }    
-//}
+}

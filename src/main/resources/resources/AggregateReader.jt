@@ -44,6 +44,7 @@ import xqt.model.functions.*;
 import xqt.model.functions.aggregates.*;
 import java.text.MessageFormat;
 
+@@SuppressWarnings("unchecked")
 public class @(ReaderClassName) implements DataReader<@(TargetRowType), @(LeftClassName), @(RightClassName)> {
 
     BufferedReader reader;

@@ -24,6 +24,7 @@ import xqt.model.functions.*;
 import xqt.model.functions.aggregates.*;
 import com.vaiona.commons.logging.*;
 
+@@SuppressWarnings("unchecked")
 public class @(EntityClassName) {
 
     @if(Attributes != null && Attributes.size() > 0){

@@ -1,13 +1,10 @@
 package com.vaiona.csv.reader;
 
 import com.vaiona.commons.data.DataReaderBase;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.List;
 
 /**
  *
- * @author standard
+ * @author Javad Chamanara
  */
 public interface DataReader<T, S1, S2> extends DataReaderBase<T, S1, S2> {
     DataReader<T, S1, S2> columnDelimiter(String value);
