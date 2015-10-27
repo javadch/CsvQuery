@@ -159,6 +159,10 @@ public class @(ReaderClassName) implements DataReader<@(TargetRowType), @(LeftCl
         // inner join, left outer join
         workbook = new XSSFWorkbook(new FileInputStream(new File(outerSource)));
         sheet = workbook.getSheet(outerContainer);
+		if(sheet == null){
+			Integer index = Integer.parseInt(outerContainer);
+			sheet = workbook.getSheetAt(index);
+		}                    
         leftReader = StreamSupport.stream(Spliterators.spliterator(sheet.iterator(), sheet.getPhysicalNumberOfRows(),Spliterator.ORDERED),false);
         outerEvaluator = workbook.getCreationHelper().createFormulaEvaluator();
         @if(joinType.equalsIgnoreCase("RightOuterJoin")){
@@ -176,6 +180,11 @@ public class @(ReaderClassName) implements DataReader<@(TargetRowType), @(LeftCl
         } else {
             XSSFWorkbook rightWorkbook = new XSSFWorkbook(new FileInputStream(new File(innerSource)));
             rightSheet = rightWorkbook.getSheet(innerContainer);
+			if(rightSheet == null){
+				Integer index = Integer.parseInt(innerContainer);
+				rightSheet = rightWorkbook.getSheetAt(index);
+			}                    
+            
             innerEvaluator = rightWorkbook.getCreationHelper().createFormulaEvaluator();
         }
 

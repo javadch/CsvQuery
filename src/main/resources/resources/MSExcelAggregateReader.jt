@@ -129,7 +129,12 @@ public class @(ReaderClassName) implements DataReader<@(TargetRowType), @(LeftCl
 
         @if(sourceOfData.equalsIgnoreCase("container")){
             XSSFWorkbook workbook = new XSSFWorkbook(new FileInputStream(new File(source)));
-            XSSFSheet sheet = workbook.getSheet("@(ContainerName)"); //getSheetAt(0);//getSheet("Sheet1");
+            XSSFSheet sheet = null;             
+	        sheet = workbook.getSheet("@(ContainerName)");
+			if(sheet == null){
+				Integer index = Integer.parseInt("@(ContainerName)");
+				sheet = workbook.getSheetAt(index);
+			}                                
             reader = StreamSupport.stream(
                     Spliterators.spliterator(sheet.iterator(), sheet.getPhysicalNumberOfRows(),Spliterator.ORDERED),false);
             FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
