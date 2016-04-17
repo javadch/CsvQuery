@@ -1,1 +1,1 @@
-call mvn clean install
+REM call mvn clean install
